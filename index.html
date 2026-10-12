@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>南勛 ｜ 隕星</title>
+<meta name="description" content="南勛（筆名隕星）：高中物理老師、獨立作家、隕星出版社創辦人、免費教育工具製作者。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060a14; --ink:#f2ecdd; --muted:#a8a193; --faint:#6f6a5e;
+  --gold:#d9a94e; --line:rgba(217,169,78,.18);
+  --serif:"Noto Serif TC","Songti TC","PMingLiU","SimSun",serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  line-height:1.85;overflow-x:hidden}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1020px;margin:0 auto;padding:0 24px}
+/* ---------- nav ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:10;
+  background:rgba(6,10,20,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(217,169,78,.14)}
+.nav-inner{max-width:1020px;margin:0 auto;padding:13px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:var(--serif);font-size:17px;letter-spacing:.28em;color:var(--ink);text-decoration:none}
+.brand b{color:var(--gold);font-weight:600}
+.nav-links a{color:var(--muted);text-decoration:none;margin-left:26px;font-size:14.5px;letter-spacing:.12em;transition:color .25s}
+.nav-links a:hover{color:var(--gold)}
+@media(max-width:640px){.nav-links a{margin-left:15px;font-size:13.5px}.brand{font-size:15px}}
+/* ---------- hero ---------- */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;padding:110px 24px 90px;position:relative;z-index:1}
+.kicker{color:var(--gold);letter-spacing:.5em;text-indent:.5em;font-size:13.5px;margin-bottom:30px}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(66px,13vw,124px);
+  letter-spacing:.14em;text-indent:.14em;line-height:1.25;
+  background:linear-gradient(180deg,#fffdf6 30%,#e8d9b8 75%,#c9a45c);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.tagline{margin-top:26px;font-size:clamp(15.5px,2.6vw,20px);letter-spacing:.16em;color:var(--ink)}
+.tagline .dot{color:var(--gold);margin:0 .55em}
+.hero-sub{margin-top:16px;color:var(--muted);font-size:15.5px;letter-spacing:.12em}
+.btns{margin-top:46px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.btn{display:inline-block;padding:13px 34px;border-radius:999px;font-size:15.5px;letter-spacing:.14em;
+  text-decoration:none;transition:transform .3s,box-shadow .3s,background .3s}
+.btn-solid{background:var(--gold);color:#1c1305;font-weight:600}
+.btn-solid:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(217,169,78,.35)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink)}
+.btn-ghost:hover{transform:translateY(-3px);border-color:var(--gold)}
+.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+  color:var(--faint);font-size:12px;letter-spacing:.4em;text-indent:.4em;animation:float 2.6s ease-in-out infinite}
+@keyframes float{0%,100%{opacity:.45;transform:translate(-50%,0)}50%{opacity:1;transform:translate(-50%,8px)}}
+/* ---------- sections ---------- */
+section{padding:104px 0;scroll-margin-top:64px;position:relative;z-index:1}
+.sec-kicker{color:var(--gold);font-size:12.5px;letter-spacing:.45em;text-indent:.1em;margin-bottom:18px}
+.sec-title{font-family:var(--serif);font-size:clamp(27px,4.6vw,40px);letter-spacing:.12em;font-weight:600}
+.sec-desc{color:var(--muted);margin-top:14px;max-width:660px;font-size:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:54px}
+.grid2.tight{margin-top:0}
+.group-title{font-family:var(--serif);font-size:18px;letter-spacing:.3em;color:var(--gold);margin:60px 0 22px;font-weight:600}
+.sub-title{font-size:15px;letter-spacing:.26em;color:var(--muted);margin:40px 0 20px;font-weight:600}
+.sub-title::before{content:"— ";color:var(--gold)}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:54px}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:linear-gradient(160deg,rgba(22,32,54,.66),rgba(10,16,28,.66));
+  border:1px solid var(--line);border-radius:18px;padding:34px 30px;
+  transition:transform .35s,border-color .35s,box-shadow .35s}
+.card:hover{transform:translateY(-6px);border-color:rgba(217,169,78,.5);box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.card .num{color:var(--gold);font-size:12.5px;letter-spacing:.32em}
+.card h3{font-family:var(--serif);font-size:21px;margin:14px 0 10px;letter-spacing:.08em;font-weight:600}
+.card p{color:var(--muted);font-size:15px}
+.card .go{display:inline-block;margin-top:18px;color:var(--gold);text-decoration:none;font-size:14.5px;letter-spacing:.1em}
+.card .go::after{content:" →"}
+.card .go:hover{text-decoration:underline}
+.book{padding:38px 32px}
+.book h3{font-size:23px}
+.book .pub{margin-top:14px;font-size:13.5px;color:var(--faint);letter-spacing:.08em}
+.plain-note{margin-top:34px;color:var(--muted);font-size:15px;border-left:2px solid var(--gold);padding-left:18px;max-width:720px}
+.plain-note b{color:var(--ink);font-weight:600}
+/* ---------- belief ---------- */
+.belief{text-align:center;padding:120px 24px}
+.belief blockquote{font-family:var(--serif);font-size:clamp(21px,3.8vw,32px);line-height:2.05;
+  max-width:780px;margin:0 auto;letter-spacing:.06em}
+.belief .who{margin-top:30px;color:var(--gold);letter-spacing:.35em;font-size:14px}
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(217,169,78,.14);padding:46px 24px 64px;text-align:center;
+  color:var(--faint);font-size:13.5px;position:relative;z-index:1;letter-spacing:.08em}
+footer .flinks{margin-bottom:20px}
+footer .flinks a{color:var(--muted);margin:0 14px;text-decoration:none;font-size:14.5px}
+footer .flinks a:hover{color:var(--gold)}
+/* ---------- reveal ---------- */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .8s ease,transform .8s ease}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.scroll-hint{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top"><b>隕星</b>・南勛</a>
+    <div class="nav-links">
+      <a href="#roles">身份</a><a href="#works">著作</a><a href="#tools">作品</a><a href="#belief">信念</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="kicker rv">筆名&nbsp;&nbsp;隕星</div>
+  <h1 class="rv">南勛</h1>
+  <div class="tagline rv">物理老師<span class="dot">×</span>獨立作家<span class="dot">×</span>免費教育工具製作者</div>
+  <p class="hero-sub rv">把物理教成故事，把故事寫成書，把工具做成免費的。</p>
+  <div class="btns rv">
+    <a class="btn btn-solid" href="#works">認識我的作品</a>
+    <a class="btn btn-ghost" href="#tools">免費開放的作品</a>
+  </div>
+  <div class="scroll-hint">往下捲</div>
+</header>
+
+<main class="wrap">
+
+  <section id="roles">
+    <div class="sec-kicker rv">WHO I AM</div>
+    <h2 class="sec-title rv">一個人，四種做法</h2>
+    <p class="sec-desc rv">白天在課堂上講物理，晚上把故事寫成書，有空就把有用的東西做成免費工具，給需要的人。</p>
+    <div class="grid2">
+      <div class="card rv">
+        <div class="num">01</div>
+        <h3>物理老師</h3>
+        <p>物理老師。相信物理不是公式，而是一種觀看世界的方式；課堂的終點，是學生開始自己問問題。</p>
+      </div>
+      <div class="card rv">
+        <div class="num">02</div>
+        <h3>作家</h3>
+        <p>以「隕星」為筆名寫作。主題橫跨哲學普及、升學思維、兒童科普、市場心理學與自我實現。</p>
+      </div>
+      <div class="card rv">
+        <div class="num">03</div>
+        <h3>獨立出版人</h3>
+        <p>「隕星出版社」：獨立電子書品牌，自己寫、自己編、自己上架，作品於 Readmoo 讀墨電子書上架。</p>
+      </div>
+      <div class="card rv">
+        <div class="num">04</div>
+        <h3>工具製作者</h3>
+        <p>把教學與助人做成免費工具：失語症溝通圖卡、中風失語者語音溝通板、互動物理模擬。看到有人在痛苦中，就做點什麼。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="works">
+    <div class="sec-kicker rv">BOOKS</div>
+    <h2 class="sec-title rv">著作</h2>
+    <p class="sec-desc rv">隕星出版社獨立出版，Readmoo 讀墨電子書上架。</p>
+    <div class="card rv" style="margin-top:54px;text-align:center;padding:56px 32px">
+      <div class="num">READMOO・全部著作</div>
+      <h3 style="font-size:26px">在 Readmoo 看隕星的全部電子書</h3>
+      <p style="max-width:560px;margin:0 auto">自我成長、親子科普、職場生存、哲學普及——完整書目與試閱都在 Readmoo 作者頁。</p>
+      <a class="btn btn-solid" style="margin-top:28px" href="https://readmoo.com/contributor/165485" target="_blank" rel="noopener">前往 Readmoo</a>
+    </div>
+    <div class="plain-note rv">
+      專欄文章見<a href="https://vocus.cc/salon/stardust" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;font-weight:600">方格子專欄「星塵旅人」</a>。
+    </div>
+  </section>
+
+  <section id="tools">
+    <div class="sec-kicker rv">FREE TOOLS</div>
+    <h2 class="sec-title rv">免費開放的作品</h2>
+    <p class="sec-desc rv">全部免費、不收費、不綁帳號。助人的工具，就該讓需要的人直接拿去用。</p>
+
+    <h3 class="group-title rv">溝通輔具</h3>
+    <div class="grid2 tight">
+      <div class="card rv">
+        <div class="num">溝通・失語症</div>
+        <h3>幫我說・AAC 語音溝通板</h3>
+        <p>給中風失語者的一鍵發聲溝通板：點圖卡，中文發聲，幫說不出口的話說出口。</p>
+        <a class="go" href="https://bangwoshuo.netlify.app/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">溝通・失語症</div>
+        <h3>失語症溝通圖卡大全</h3>
+        <p>8 大類 198 張免費溝通圖卡：吃、喝、身體、感覺、日常，全部開放取用。</p>
+        <a class="go" href="https://open-talk.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">溝通・失語症</div>
+        <h3>open-talk・英文版溝通圖卡</h3>
+        <p>Free AAC Communication Cards：失語症溝通圖卡大全的英文版，免費開放取用。</p>
+        <a class="go" href="https://open-talk-en.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">溝通・兒童</div>
+        <h3>kid-talk・兒童溝通板</h3>
+        <p>8 大類 120 張兒童溝通圖卡，點卡中文發聲，陪孩子把需求說清楚。</p>
+        <a class="go" href="https://kid-talk.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">溝通・青少年</div>
+        <h3>teen-talk・青少年溝通板</h3>
+        <p>「懂我的情緒」「青春期的我」101 張圖卡，給說不出口的年紀一個出口。</p>
+        <a class="go" href="https://teen-talk.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">溝通・圖卡</div>
+        <h3>picto-talk・3×3 溝通圖卡</h3>
+        <p>白底 3×3 黑白圖卡，每卡大中文＋小印尼文，點卡中文發聲，跨語言也通。</p>
+        <a class="go" href="https://picto-talk.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+    </div>
+
+    <h3 class="group-title rv">教學工具</h3>
+    <h4 class="sub-title rv">錄課工具</h4>
+    <div class="grid2 tight">
+      <div class="card rv">
+        <div class="num">教學・錄課</div>
+        <h3>墨課・白板錄課</h3>
+        <p>Doceri 替代方案：iPad 手寫板書、逐頁錄課回放，免費開放、可自行部署。</p>
+        <a class="go" href="https://moke.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+    </div>
+
+    <h4 class="sub-title rv">物理互動模擬</h4>
+    <div class="grid2 tight">
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>原子光譜實驗室</h3>
+        <p>氫與中性氦的互動光譜實驗：選躍遷路徑，即時算出波長、能量差與光譜系列。</p>
+        <a class="go" href="https://atomicspectrumlab.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟實驗</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>雙狹縫干涉互動實驗室</h3>
+        <p>調波長、狹縫間距、屏幕位置，即時看見干涉條紋如何變化：波動光學親手玩。</p>
+        <a class="go" href="https://double-slitinterference.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟實驗</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>參考圓與簡諧運動</h3>
+        <p>等速率圓周運動的鉛直投影就是簡諧運動：調角速率與振幅，親眼看見 y = R sin(θ)。</p>
+        <a class="go" href="https://y-shm-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟模擬</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>3D 繩波實驗室</h3>
+        <p>3D 互動繩波：分析路徑差，看波峰遇波峰如何建設性干涉、波峰遇波谷如何抵消。</p>
+        <a class="go" href="https://water-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟實驗</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>運動學觀念邏輯特訓</h3>
+        <p>圓周運動的速度與加速度觀念特訓：文氏圖＋邏輯樹釐清觀念，再隨機抽 10 題驗收。</p>
+        <a class="go" href="https://circular-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始特訓</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>物理力圖大師・靜力平衡挑戰</h3>
+        <p>力圖三部曲：定系統、畫力圖、列方程。20 題等級挑戰，滿分拿下「傳說大師」稱號。</p>
+        <a class="go" href="https://forcemaster.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始挑戰</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>駐波生成模擬器</h3>
+        <p>看行進波如何「合成」為駐波：調諧波數，觀察節點生成，理解波動疊加的本質。</p>
+        <a class="go" href="https://standing-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟模擬</a>
+      </div>
+      <div class="card rv">
+        <div class="num">教學・物理</div>
+        <h3>弦波多重諧波疊加模擬器</h3>
+        <p>疊加原理視覺化：多個諧波在弦上如何疊加成總位移，一眼看懂傅立葉的精神。</p>
+        <a class="go" href="https://harmonicadditionsimulator.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟模擬</a>
+      </div>
+    </div>
+
+    <h4 class="sub-title rv">觀念測驗評量</h4>
+    <div class="grid2 tight">
+      <div class="card rv">
+        <div class="num">測驗・專注力</div>
+        <h3>連續專注力測驗</h3>
+        <p>Continuous Performance Test（CPT）：約 14 分鐘的專注力測驗，免費線上施測。</p>
+        <a class="go" href="https://adhd-cpt-system.pages.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+    </div>
+
+    <h3 class="group-title rv">遊戲與生活</h3>
+    <div class="grid2 tight">
+      <div class="card rv">
+        <div class="num">遊戲・在地</div>
+        <h3>陽明里漫步・3D 體素遊戲</h3>
+        <p>Minecraft 風 3D 體素重現陽明里 30 個地標，打開瀏覽器就能走進去逛。</p>
+        <a class="go" href="https://yangming-walk.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟遊玩</a>
+      </div>
+      <div class="card rv">
+        <div class="num">生活・每日</div>
+        <h3>草山福氣站・晨間卡</h3>
+        <p>每天一張晨間祝福卡：精選背景＋行書字型，傳給長輩剛剛好。</p>
+        <a class="go" href="https://summer-heart-e3b4.thomasgogo.workers.dev/" target="_blank" rel="noopener">開啟使用</a>
+      </div>
+      <div class="card rv">
+        <div class="num">故事・社區</div>
+        <h3>裕倉說草山・故事抽屜櫃</h3>
+        <p>36 篇草山在地故事，八大類抽屜櫃陳列，寫給陽明里的人。</p>
+        <a class="go" href="https://yuchang-caoshan.netlify.app/" target="_blank" rel="noopener">開啟閱讀</a>
+      </div>
+      <div class="card rv">
+        <div class="num">遊戲・防詐</div>
+        <h3>防詐武道場・社會叢林生存試煉</h3>
+        <p>防詐邏輯試煉：隨機抽三組騙術陷阱，看穿話術背後的代碼，找出沒用到的技巧。</p>
+        <a class="go" href="https://gentle-dream-30a3.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始試煉</a>
+      </div>
+      <div class="card rv">
+        <div class="num">測驗・思辨</div>
+        <h3>大人系思辨防身術</h3>
+        <p>社會叢林生存測驗：50 道詐騙、職場 PUA、資金陷阱實境題，隨機抽三題驗收你的生存力。</p>
+        <a class="go" href="https://adultsurvivalquiz.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始測驗</a>
+      </div>
+      <div class="card rv">
+        <div class="num">測驗・邏輯</div>
+        <h3>因果偵探事務所</h3>
+        <p>60 題邏輯題庫，每次隨機抽 10 題：化身因果偵探，揪出推理中的破綻。</p>
+        <a class="go" href="https://causal-detective.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始辦案</a>
+      </div>
+      <div class="card rv">
+        <div class="num">測驗・英文</div>
+        <h3>台式英文排毒聖經</h3>
+        <p>Ultimate De-Chinglish Quiz：隨機 10 題，揪出台式英文，語音加強版。</p>
+        <a class="go" href="https://stop-chinglish.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始排毒</a>
+      </div>
+      <div class="card rv">
+        <div class="num">生活・時間</div>
+        <h3>台灣人生餘命紀錄器</h3>
+        <p>輸入年齡，算給你看：扣掉睡眠、工作、滑手機，你真正能改變命運的自由時間還剩多少年。</p>
+        <a class="go" href="https://lifes-time100.thomasgogo.workers.dev/" target="_blank" rel="noopener">面對真相</a>
+      </div>
+      <div class="card rv">
+        <div class="num">測驗・人格</div>
+        <h3>Life OS・人生算法測驗</h3>
+        <p>大五人格職業矩陣：3 分鐘生成你的 8-bit 像素人格與生存矩陣。</p>
+        <a class="go" href="https://lifes-bigfive.thomasgogo.workers.dev/" target="_blank" rel="noopener">開始測驗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="belief" class="belief">
+    <div class="sec-kicker rv">BELIEF</div>
+    <blockquote class="rv">「做事以全體人類利益為優先。<br>看到很多人在痛苦中，<br>希望助人的工具免費開放。」</blockquote>
+    <div class="who rv">— 南勛</div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="flinks">
+    <a href="https://github.com/thomashuanggogo" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  © 2026 南勛 ｜ 筆名 隕星
+</footer>
+
+<script>
+(function(){
+  var cv=document.getElementById('stars'),ctx=cv.getContext('2d');
+  var W,H,stars=[],meteors=[];
+  var RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function resize(){
+    W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;
+    var n=Math.min(230,Math.floor(W*H/8500));stars=[];
+    for(var i=0;i<n;i++)stars.push({x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*1.4+0.3,p:Math.random()*Math.PI*2,s:0.5+Math.random()*1.6});
+  }
+  window.addEventListener('resize',resize);resize();
+  function spawnMeteor(){
+    if(!RM&&!document.hidden){
+      var x=W*(0.35+Math.random()*0.6),y=H*Math.random()*0.28;
+      var sp=8+Math.random()*6,ang=Math.PI*(0.72+Math.random()*0.12);
+      meteors.push({x:x,y:y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,life:1});
+    }
+    setTimeout(spawnMeteor,4000+Math.random()*7000);
+  }
+  setTimeout(spawnMeteor,1500);
+  var t=0;
+  (function tick(){
+    t+=0.016;ctx.clearRect(0,0,W,H);
+    var i,s,a;
+    for(i=0;i<stars.length;i++){s=stars[i];
+      a=0.3+0.7*Math.abs(Math.sin(t*s.s+s.p));
+      ctx.globalAlpha=a;ctx.fillStyle='#e9edff';
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.3);ctx.fill();}
+    ctx.globalAlpha=1;
+    for(i=meteors.length-1;i>=0;i--){var m=meteors[i];
+      m.x+=m.vx;m.y+=m.vy;m.life-=0.014;
+      if(m.life<=0||m.x<-160||m.y>H+160){meteors.splice(i,1);continue;}
+      var tx=m.x-m.vx*16,ty=m.y-m.vy*16;
+      var g=ctx.createLinearGradient(m.x,m.y,tx,ty);
+      g.addColorStop(0,'rgba(255,238,205,'+(0.95*m.life).toFixed(3)+')');
+      g.addColorStop(1,'rgba(255,238,205,0)');
+      ctx.strokeStyle=g;ctx.lineWidth=2;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.fillStyle='rgba(255,244,220,'+(0.9*m.life).toFixed(3)+')';
+      ctx.beginPath();ctx.arc(m.x,m.y,2.2,0,6.3);ctx.fill();}
+    requestAnimationFrame(tick);
+  })();
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
+})();
+</script>
+</body>
+</html>
