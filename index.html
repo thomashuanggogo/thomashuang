@@ -73,7 +73,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:10;background:var(--nav);
 .hero .roles{margin-top:32px;font-size:17px;letter-spacing:.32em;text-indent:.1em}
 .hero .roles .dot{color:var(--accent);margin:0 .7em}
 .hero .roles .nw{white-space:nowrap}
-.hero-mission{margin-top:26px;font-size:19px;letter-spacing:.12em;line-height:2.4;color:var(--ink);max-width:640px;min-height:9em;cursor:pointer}
+.hero-mission{margin-top:26px;font-size:19px;letter-spacing:.12em;line-height:2.4;color:var(--ink);max-width:640px;min-height:10em;cursor:pointer}
 .hero-mission .acc{color:var(--accent);font-weight:700}
 #ty-belief{min-height:11em;cursor:pointer}
 #ty-belief .acc{color:var(--accent)}
@@ -496,7 +496,7 @@ footer .flinks a:hover{color:var(--accent)}
 <footer>
   <div class="cta rv">
     <p class="cta-main">把愛傳出去。</p>
-    <p>生命的意義，在於你影響了多少人，幫助了多少人。<br>從分享這些免費工具開始。</p>
+    <p>生命的意義，<br>在於你影響了多少人，<br>幫助了多少人。<br>從分享這些免費工具開始。</p>
   </div>
   <div class="flinks">
     <a href="https://github.com/thomashuanggogo" target="_blank" rel="noopener">GitHub</a>
@@ -540,7 +540,7 @@ function toggleMore(id,btn){
   // 信念區也需要被觀察（它沒有 .rv）
   io.observe(document.getElementById('ty-belief'));
 })();
-var MISSION_TEXT='把物理教成故事，把故事寫成書。\n做了些免費的工具，希望能幫到你。';
+var MISSION_TEXT='把物理教成故事，\n把故事寫成書。\n做了些免費的工具，\n希望能幫到你。';
 var BELIEF_TEXT='「看到有人在痛苦中，\n就想做點什麼。\n這些工具全部免費，\n希望能幫助到更多人。」';
 function typer(el, text, accent, speed){
   var i=0, done=false, timer=null, base=speed||140;
