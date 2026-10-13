@@ -47,13 +47,13 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opa
 .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 28px}
 /* ---------- nav ---------- */
 nav{position:fixed;top:0;left:0;right:0;z-index:10;background:var(--nav);
-  border-bottom:1px solid var(--line)}}
-.nav-inner{max-width:960px;margin:0 auto;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+  border-bottom:1px solid var(--line)}
+.nav-inner{max-width:960px;margin:0 auto;padding:14px 36px;display:flex;justify-content:space-between;align-items:center}
 .brand{font-size:18px;letter-spacing:.3em;color:var(--ink);text-decoration:none;font-weight:700}
 .brand b{color:var(--accent)}
 .nav-links a{color:var(--muted);text-decoration:none;margin-left:28px;font-size:14.5px;letter-spacing:.16em}
 .nav-links a:hover{color:var(--accent)}
-@media(max-width:640px){.nav-links a{margin-left:15px;font-size:13.5px}.brand{font-size:15px}}
+@media(max-width:640px){.nav-inner{padding:12px 32px}.nav-links a{margin-left:10px;font-size:13px;letter-spacing:.08em}.brand{font-size:14px;letter-spacing:.2em}}
 /* ---------- 印章 ---------- */
 .seal{display:inline-flex;align-items:center;justify-content:center;
   background:
