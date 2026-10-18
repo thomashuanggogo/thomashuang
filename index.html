@@ -164,6 +164,19 @@ footer .flinks a:hover{color:var(--accent)}
   background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 13px;backdrop-filter:blur(6px)}
 .theme-sw button{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--sw);cursor:pointer;padding:0}
 .theme-sw button.on{outline:2px solid var(--accent);outline-offset:2px}
+/* ---------- 搜尋＋隨機推薦 ---------- */
+.search-bar{display:flex;gap:10px;margin:26px 0 6px;max-width:640px}
+.search-bar input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:12px 18px;font-size:15px;font-family:var(--serif);color:var(--ink);letter-spacing:.08em;min-height:48px}
+.search-bar input::placeholder{color:var(--faint)}
+.search-bar input:focus{outline:none;border-color:var(--accent)}
+.search-bar button{background:transparent;border:1px solid var(--accent);color:var(--accent);
+  border-radius:10px;padding:12px 22px;font-size:15px;font-family:var(--serif);cursor:pointer;
+  letter-spacing:.12em;white-space:nowrap;min-height:48px}
+.search-bar button:hover{background:var(--accent);color:#fff}
+.search-count{color:var(--muted);font-size:14px;margin:8px 0;letter-spacing:.06em}
+.card.hide{display:none!important}
+.card.spotlight{outline:2px solid var(--accent);outline-offset:4px}
 </style>
 </head>
 <body>
@@ -225,6 +238,11 @@ footer .flinks a:hover{color:var(--accent)}
     <div class="sec-kicker rv"><b>卷三</b>・作品</div>
     <h2 class="sec-title rv">免費開放的作品</h2>
     <p class="sec-desc rv">全部免費、不收費、不綁帳號。助人的工具，就該讓需要的人直接拿去用。</p>
+    <div class="search-bar rv">
+      <input type="text" id="toolSearch" placeholder="搜尋小程式…（例：浮力、單擺、測驗）" autocomplete="off" aria-label="搜尋小程式">
+      <button id="randomPick" type="button">隨機來一個</button>
+    </div>
+    <p class="search-count" id="searchCount" style="display:none"></p>
 
     <h3 class="group-title rv">教學工具</h3>
     <div class="grid2 tight">
@@ -784,6 +802,57 @@ footer .flinks a:hover{color:var(--accent)}
   <button data-t="qing" style="--sw:#2f5c52" title="黛青" aria-label="黛青配色"></button>
 </div>
 <script>
+/* 搜尋＋隨機推薦 */
+(function(){
+  var input=document.getElementById('toolSearch');
+  if(!input)return;
+  var count=document.getElementById('searchCount');
+  var moreIds=['more-teach','more-aac','more-life'];
+  function allCards(){
+    return Array.prototype.slice.call(document.querySelectorAll('#tools .card'));
+  }
+  function expandAll(){
+    moreIds.forEach(function(id){
+      var el=document.getElementById(id);
+      if(el&&el.style.display!=='block'){
+        el.style.display='block';
+        el.querySelectorAll('.rv').forEach(function(x){x.classList.add('in');});
+      }
+    });
+    document.querySelectorAll('.more-btn').forEach(function(b){b.textContent='收起';});
+  }
+  input.addEventListener('input',function(){
+    var q=input.value.trim();
+    var cards=allCards(), shown=0;
+    document.querySelectorAll('.card.spotlight').forEach(function(c){c.classList.remove('spotlight');});
+    if(q){
+      expandAll();
+      cards.forEach(function(c){
+        var hit=c.textContent.indexOf(q)>-1;
+        c.classList.toggle('hide',!hit);
+        if(hit)shown++;
+      });
+      count.style.display='block';
+      count.textContent=shown?('找到 '+shown+' 個相關工具'):'沒有找到相關工具，換個關鍵字試試';
+    }else{
+      cards.forEach(function(c){c.classList.remove('hide');});
+      count.style.display='none';
+    }
+  });
+  document.getElementById('randomPick').addEventListener('click',function(){
+    input.value='';
+    var cards=allCards();
+    cards.forEach(function(c){c.classList.remove('hide');});
+    count.style.display='none';
+    document.querySelectorAll('.card.spotlight').forEach(function(c){c.classList.remove('spotlight');});
+    expandAll();
+    if(!cards.length)return;
+    var pick=cards[Math.floor(Math.random()*cards.length)];
+    pick.classList.add('spotlight');
+    pick.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){pick.classList.remove('spotlight');},3500);
+  });
+})();
 function toggleMore(id,btn){
   var el=document.getElementById(id);
   var open=el.style.display==='block';
