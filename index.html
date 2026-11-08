@@ -246,27 +246,122 @@ footer .flinks a:hover{color:var(--accent)}
     <p class="search-count" id="searchCount" style="display:none"></p>
 
     <style>
-.rt-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:13px 2px;border-top:1px solid var(--line)}
-.rt-row:first-of-type{border-top:none}
-.rt-name{font-weight:700;letter-spacing:.08em;min-width:168px}
-.rt-links a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--faint);margin-right:16px;font-size:14.5px;line-height:2}
-.rt-links a:hover{color:var(--accent);border-color:var(--accent)}
-.rt-note{color:var(--muted);font-size:13.5px}
+.rt-lab{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-top:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:15.5px}
+.rt-lab:visited{color:var(--ink)}
+.rt-lab:hover{color:var(--accent)}
+.rt-lab .arr{color:var(--faint);font-size:14px}
+.rt-lab:hover .arr{color:var(--accent)}
+.rt-branch{margin-top:16px;color:var(--muted);font-size:13.5px;line-height:2}
+.rt-branch a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--faint);padding-bottom:1px}
+.rt-branch a:visited{color:var(--muted)}
+.rt-branch a:hover{color:var(--accent);border-color:var(--accent)}
 </style>
     <h3 class="group-title rv">物理・學習路線</h3>
     <p class="sec-desc rv">物理實驗室照課綱排成一條路：從力學走到近代物理，照站往下玩就不會撞到還沒學過的東西。帶「小步流」標籤的是分步引導版，其他是自由探索版。</p>
-    <div class="grid2 tight" style="margin-top:26px">
-      <div class="card rv" style="grid-column:1/-1">
-        <div class="num">小步流・課綱地圖</div>
-        <div class="rt-row"><span class="rt-name">入口・量測</span><span class="rt-links"><a href="https://thomashuanggogo.github.io/physics-lab/" target="_blank" rel="noopener">單位與因次拼圖</a></span></div>
-        <div class="rt-row"><span class="rt-name">第一站・運動與力</span><span class="rt-links"><a href="https://kinematics-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">運動學三圖連動</a><a href="https://circular-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener">運動學觀念邏輯特訓</a><a href="https://newton2nd-law.thomasgogo.workers.dev/" target="_blank" rel="noopener">加速度探究</a><a href="https://projectile-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">拋體運動</a><a href="https://static-equilibrium-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">靜力平衡</a><a href="https://incline-inclinedevice.thomasgogo.workers.dev/" target="_blank" rel="noopener">斜面摩擦</a><a href="https://elevator-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">電梯超重・失重</a><a href="https://skydive-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">跳傘・終端速度</a></span><span class="rt-note">支線：<a href="https://thomashuanggogo.github.io/Friction-Simulator/" target="_blank" rel="noopener">摩擦力模擬</a>、<a href="https://friction-pull-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">水平摩擦</a></span></div>
-        <div class="rt-row"><span class="rt-name">第二站・能量與轉動</span><span class="rt-links"><a href="https://rubber-band-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">橡皮筋彈力</a><a href="https://energy-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">力學能守恆</a><a href="https://collision-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">碰撞</a><a href="https://centripetal-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">圓周運動・向心力</a><a href="https://angular-momentum-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">角動量守恆</a></span></div>
-        <div class="rt-row"><span class="rt-name">第三站・振動與流體</span><span class="rt-links"><a href="https://spring-shm.thomasgogo.workers.dev/" target="_blank" rel="noopener">彈簧振子・簡諧運動</a><a href="https://y-shm-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener">參考圓與簡諧運動</a><a href="https://pendulum-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">單擺</a><a href="https://buoyancy-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">浮力</a></span></div>
-        <div class="rt-row"><span class="rt-name">第四站・熱學</span><span class="rt-links"><a href="https://maxwell-boltzmann-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">分子速率分佈</a></span></div>
-        <div class="rt-row"><span class="rt-name">第五站・波動與聲音</span><span class="rt-links"><a href="https://wave-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">水波</a><a href="https://standing-wave-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">駐波</a><a href="https://doppler-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">都卜勒效應</a><a href="https://resonance-tube-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">氣柱共鳴</a></span><span class="rt-note">支線：<a href="https://water-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">3D 繩波</a>、<a href="https://standing-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">駐波生成</a>、<a href="https://harmonicadditionsimulator.thomasgogo.workers.dev/" target="_blank" rel="noopener">諧波疊加</a>、<a href="https://guitar-string-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">吉他弦駐波</a></span></div>
-        <div class="rt-row"><span class="rt-name">第六站・光學</span><span class="rt-links"><a href="https://refraction-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">折射</a><a href="https://lens-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">透鏡成像</a><a href="https://double-slitinterference.thomasgogo.workers.dev/" target="_blank" rel="noopener">雙狹縫干涉</a><a href="https://polarizer-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">三片偏振片</a></span><span class="rt-note">支線：<a href="https://polarizer-compare-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">金屬柵欄 vs 偏振片</a></span></div>
-        <div class="rt-row"><span class="rt-name">第七站・電與磁</span><span class="rt-links"><a href="https://circuit-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">電路電子流</a><a href="https://three-fields-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">三場</a><a href="https://em-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">電磁感應</a><a href="https://generator-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">發電機</a></span></div>
-        <div class="rt-row"><span class="rt-name">終站・近代物理</span><span class="rt-links"><a href="https://atomicspectrumlab.thomasgogo.workers.dev/" target="_blank" rel="noopener">原子光譜</a></span><span class="rt-note">跨科探索：<a href="https://foucault-3d.thomasgogo.workers.dev/" target="_blank" rel="noopener">傅科擺・立體地球</a></span></div>
+    <div class="grid2" style="margin-top:26px">
+      <div class="card rv">
+        <div class="num">入口・必修物理</div>
+        <h3>入口・量測</h3>
+        <p>先學會量東西：單位怎麼拼、因次怎麼驗算，後面每一站都用得到。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://thomashuanggogo.github.io/physics-lab/" target="_blank" rel="noopener"><span>單位與因次拼圖</span><span class="arr">→</span></a>
+        </div>
+        
+      </div>
+      <div class="card rv">
+        <div class="num">第一站・選修物理 I</div>
+        <h3>運動與力</h3>
+        <p>先看懂運動怎麼描述，再看力怎麼改變運動。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://kinematics-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>運動學三圖連動 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://circular-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>運動學觀念邏輯特訓 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://newton2nd-law.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>加速度探究 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://projectile-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>拋體運動 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://static-equilibrium-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>靜力平衡 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://incline-inclinedevice.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>斜面摩擦 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://elevator-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>電梯超重・失重 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://skydive-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>跳傘・終端速度 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        </div>
+        <div class="rt-branch">支線：<a href="https://thomashuanggogo.github.io/Friction-Simulator/" target="_blank" rel="noopener">摩擦力模擬</a>、<a href="https://friction-pull-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">水平摩擦</a></div>
+      </div>
+      <div class="card rv">
+        <div class="num">第二站・選修物理 I–II</div>
+        <h3>能量與轉動</h3>
+        <p>換一個角度看力學：不追每一步，只算能量和動量的帳。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://rubber-band-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>橡皮筋彈力 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://energy-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>力學能守恆 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://collision-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>碰撞 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://centripetal-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>圓周運動・向心力 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://angular-momentum-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>角動量守恆 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        </div>
+        
+      </div>
+      <div class="card rv">
+        <div class="num">第三站・選修物理 II</div>
+        <h3>振動與流體</h3>
+        <p>來回擺動的規律，和水裡的浮力，其實都是平衡在說話。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://spring-shm.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>彈簧振子・簡諧運動 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://y-shm-motion.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>參考圓與簡諧運動 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://pendulum-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>單擺 <span class="xbtag">小步流</span></span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://buoyancy-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>浮力</span><span class="arr">→</span></a>
+        </div>
+        
+      </div>
+      <div class="card rv">
+        <div class="num">第四站・選修物理 II</div>
+        <h3>熱學</h3>
+        <p>溫度不是感覺，是分子跑多快的統計結果。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://maxwell-boltzmann-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>分子速率分佈</span><span class="arr">→</span></a>
+        </div>
+        
+      </div>
+      <div class="card rv">
+        <div class="num">第五站・選修物理 III</div>
+        <h3>波動與聲音</h3>
+        <p>波走過去，介質沒有跟著走；聲音是波的一種。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://wave-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>水波</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://standing-wave-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>駐波</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://doppler-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>都卜勒效應</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://resonance-tube-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>氣柱共鳴</span><span class="arr">→</span></a>
+        </div>
+        <div class="rt-branch">支線：<a href="https://water-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">3D 繩波</a>、<a href="https://standing-wave.thomasgogo.workers.dev/" target="_blank" rel="noopener">駐波生成</a>、<a href="https://harmonicadditionsimulator.thomasgogo.workers.dev/" target="_blank" rel="noopener">諧波疊加</a>、<a href="https://guitar-string-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">吉他弦駐波</a></div>
+      </div>
+      <div class="card rv">
+        <div class="num">第六站・選修物理 III</div>
+        <h3>光學</h3>
+        <p>光先當直線走，再當波看，最後發現它還有方向性。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://refraction-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>折射</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://lens-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>透鏡成像</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://double-slitinterference.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>雙狹縫干涉</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://polarizer-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>三片偏振片</span><span class="arr">→</span></a>
+        </div>
+        <div class="rt-branch">支線：<a href="https://polarizer-compare-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener">金屬柵欄 vs 偏振片</a></div>
+      </div>
+      <div class="card rv">
+        <div class="num">第七站・選修物理 IV–V</div>
+        <h3>電與磁</h3>
+        <p>從電路裡的電子流，一路走到發電機：電和磁是一體的。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://circuit-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>電路電子流</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://three-fields-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>三場</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://em-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>電磁感應</span><span class="arr">→</span></a>
+        <a class="rt-lab" href="https://generator-lab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>發電機</span><span class="arr">→</span></a>
+        </div>
+        
+      </div>
+      <div class="card rv">
+        <div class="num">終站・選修物理 V</div>
+        <h3>近代物理</h3>
+        <p>原子為什麼只發某些顏色的光？這一站，物理換了規則。</p>
+        <div style="margin-top:18px">
+        <a class="rt-lab" href="https://atomicspectrumlab.thomasgogo.workers.dev/" target="_blank" rel="noopener"><span>原子光譜</span><span class="arr">→</span></a>
+        </div>
+        <div class="rt-branch">跨科探索：<a href="https://foucault-3d.thomasgogo.workers.dev/" target="_blank" rel="noopener">傅科擺・立體地球</a></div>
       </div>
     </div>
 
