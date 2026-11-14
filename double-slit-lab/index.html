@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雙狹縫干涉互動模擬</title>
+  <style>
+    :root {
+      --bg: #F7F5F0;
+      --card: #FFFFFF;
+      --card-subtle: #F2EFE9;
+      --border: #E2DDD3;
+      --text: #1D1D1F;
+      --text-muted: #5C5C62;
+      --kw-red: #D93829;
+      --kw-red-bg: #FDF1F0;
+      --wave-blue: #1D4ED8;
+      --success-green: #15803D;
+      --success-bg: #F0FDF4;
+      --accent-dark: #1D1D1F;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 頂部：縮小步驟條 + 任務引導句 */
+    .top-bar {
+      flex: 0 0 auto;
+      height: 52px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .step-strip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .step-pill {
+      min-width: 36px;
+      height: 44px;
+      padding: 0 8px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-pill:hover:not(:disabled) { background: var(--card-subtle); color: var(--text); }
+    .step-pill.active { background: var(--accent-dark); color: #FFFFFF; }
+    .step-pill.done:not(.active) { background: var(--card-subtle); color: var(--text); border-color: var(--border); }
+    .step-pill:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .guide-banner {
+      flex: 1;
+      text-align: right;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kw { color: var(--kw-red); font-weight: 700; }
+
+    /* 主體兩欄 */
+    .main-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(375px, 1fr);
+      gap: 12px;
+      padding: 10px 16px;
+    }
+
+    /* 左側：現象區 */
+    .phenomenon-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      gap: 8px;
+    }
+
+    .phenomenon-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+    }
+
+    .readout-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .readout-chip {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 9px;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+
+    .readout-chip .label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .readout-chip .val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .playback-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      min-width: 54px;
+      height: 44px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-subtle);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ctrl-btn.active {
+      background: var(--accent-dark);
+      color: #FFFFFF;
+      border-color: var(--accent-dark);
+    }
+
+    .speed-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .speed-btn {
+      min-width: 44px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .speed-btn.active {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #F7F4EE 0%, #FFFFFF 100%);
+      overflow: hidden;
+    }
+
+    canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+    .phenomenon-footer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 2px 2px 0;
+    }
+
+    .legend-row { display: flex; align-items: center; gap: 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+    /* 右側：教學卡片與控制區 */
+    .control-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      gap: 8px;
+    }
+
+    .step-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 7px;
+    }
+
+    .step-title { font-size: 17px; font-weight: 700; }
+    .step-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--card-subtle);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .step-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .story-card {
+      background: var(--card-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .story-card p + p { margin-top: 4px; }
+
+    .symbol-note {
+      background: #FFFDF8;
+      border-left: 3px solid var(--kw-red);
+      padding: 7px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .controls-box { display: flex; flex-direction: column; gap: 6px; }
+    .control-row { display: flex; flex-direction: column; gap: 2px; }
+    .control-label-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+    .control-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 700; }
+
+    input[type="range"] { width: 100%; height: 44px; accent-color: var(--accent-dark); cursor: pointer; }
+
+    .btn-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+    .choice-btn, .action-btn, .tab-btn {
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .action-btn, .tab-btn { text-align: center; }
+    .choice-btn:hover, .action-btn:hover:not(:disabled), .tab-btn:hover {
+      border-color: var(--accent-dark);
+      background: var(--card-subtle);
+    }
+
+    .choice-btn.selected, .tab-btn.selected, .action-btn.primary {
+      background: var(--accent-dark);
+      color: #FFFFFF;
+      border-color: var(--accent-dark);
+    }
+
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .compare-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      background: #FCFBF8;
+    }
+    .compare-box .box-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 3px; }
+
+    .formula-box {
+      background: #FCFBF8;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .formula-main {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .formula-term {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .formula-term:hover { background: var(--card-subtle); }
+    .formula-term.active { color: var(--kw-red); background: var(--kw-red-bg); border-color: #F5C2BD; }
+
+    .formula-line { font-size: 13px; line-height: 1.4; display: flex; gap: 8px; }
+    .formula-line.active { color: var(--kw-red); font-weight: 600; }
+    .formula-sym { font-family: var(--font-mono); font-weight: 700; min-width: 36px; }
+
+    .myth-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      background: #FCFBF8;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .myth-block-label { font-size: 11px; font-weight: 700; color: var(--kw-red); margin-bottom: 2px; }
+    .myth-block-text { font-size: 13px; line-height: 1.45; }
+
+    .memory-card {
+      background: var(--kw-red-bg);
+      border: 1px solid #F5C2BD;
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--kw-red);
+      line-height: 1.45;
+    }
+
+    .feedback-box {
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: var(--card-subtle);
+    }
+    .feedback-box.ok { background: var(--success-bg); border-color: #BBF7D0; color: #14532D; }
+    .feedback-box.warn { background: var(--kw-red-bg); border-color: #FECACA; color: #7F1D1D; }
+
+    .nav-footer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .nav-btn {
+      min-width: 100px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 14px;
+    }
+    .nav-btn.next { flex: 1; background: var(--accent-dark); color: #FFFFFF; border-color: var(--accent-dark); }
+    .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    @media (max-height: 750px) {
+      .top-bar { height: 46px; }
+      .main-grid { padding: 8px 14px; gap: 10px; }
+      .control-pane { padding: 10px 12px; gap: 6px; }
+      .story-card { padding: 8px 10px; font-size: 13px; line-height: 1.42; }
+      .step-title { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <nav class="step-strip" id="stepStrip" aria-label="學習步驟"></nav>
+      <div class="guide-banner" id="guideBanner"></div>
+    </header>
+
+    <main class="main-grid">
+      <section class="phenomenon-pane">
+        <div class="phenomenon-header">
+          <div class="readout-strip" id="readoutStrip"></div>
+          <div class="playback-group">
+            <button type="button" class="ctrl-btn" id="playPauseBtn">播放</button>
+            <button type="button" class="ctrl-btn" id="stepWaveBtn">單步前進</button>
+            <div class="speed-group" role="group" aria-label="慢動作倍率">
+              <button type="button" class="speed-btn active" data-speed="1">1x</button>
+              <button type="button" class="speed-btn" data-speed="0.5">0.5x</button>
+              <button type="button" class="speed-btn" data-speed="0.25">0.25x</button>
+            </div>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="simCanvas"></canvas>
+        </div>
+        <div class="phenomenon-footer">
+          <div class="legend-row" id="legendRow">
+            <span class="legend-item"><span class="dot" style="background:#15803D;"></span>波峰線</span>
+            <span class="legend-item" id="legendConstructive" style="display:none;"><span class="dot" style="background:#F59E0B;"></span>建設性交點</span>
+            <span class="legend-item" id="legendDestructive" style="display:none;"><span style="font-weight:700;color:#D93829;">×</span> 破壞性交點</span>
+          </div>
+          <span id="statusSummary"></span>
+        </div>
+      </section>
+
+      <aside class="control-pane">
+        <div class="step-header">
+          <h1 class="step-title" id="stepTitle"></h1>
+          <span class="step-badge" id="stepBadge"></span>
+        </div>
+        <div class="step-body" id="stepBody"></div>
+        <div class="nav-footer">
+          <button type="button" class="nav-btn prev" id="prevBtn">上一步</button>
+          <button type="button" class="nav-btn next" id="nextBtn">下一步</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    /**
+ * 雙狹縫干涉純物理計算模組（無 DOM 相依）
+ * 提供光譜近似、亮紋間距、繞射包絡與干涉強度分布、路徑差及交點計算。
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.DoubleSlitPhysics = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var LIMITS = {
+    MIN_LAMBDA_NM: 380,
+    MAX_LAMBDA_NM: 700,
+    MIN_D_MM: 0.05,
+    MAX_D_MM: 0.50,
+    MIN_L_M: 0.50,
+    MAX_L_M: 2.00,
+    MIN_A_MM: 0.01,
+    MAX_A_MM: 0.15
+  };
+
+  /**
+   * 計算雙狹縫亮紋間距 Δy (mm) = λ * L / d
+   * @param {number} lambdaNm - 波長 (nm)
+   * @param {number} dMm - 狹縫間距 (mm)
+   * @param {number} lMeters - 狹縫到屏幕距離 (m)
+   * @returns {number} Δy (mm)
+   */
+  function computeFringeSpacingMm(lambdaNm, dMm, lMeters) {
+    if (!(lambdaNm > 0) || !(dMm > 0) || !(lMeters > 0)) {
+      throw new Error('波長、狹縫間距與屏幕距離必須大於 0');
+    }
+    // λ(m) = lambdaNm * 1e-9, d(m) = dMm * 1e-3, y(mm) = y(m) * 1e3
+    // Δy(mm) = (lambdaNm * 1e-9 * lMeters / (dMm * 1e-3)) * 1e3 = lambdaNm * 1e-3 * lMeters / dMm
+    return (lambdaNm * 1e-3 * lMeters) / dMm;
+  }
+
+  /**
+   * 計算第 m 級亮紋位置 (mm)
+   */
+  function brightFringePositionMm(m, lambdaNm, dMm, lMeters) {
+    return m * computeFringeSpacingMm(lambdaNm, dMm, lMeters);
+  }
+
+  /**
+   * 計算第 n 級暗紋位置 (mm)，n = 1 代表第一暗紋 (Δy / 2)
+   */
+  function darkFringePositionMm(n, lambdaNm, dMm, lMeters) {
+    var sign = n >= 0 ? 1 : -1;
+    var absN = Math.abs(n);
+    if (absN === 0) return 0;
+    return sign * (absN - 0.5) * computeFringeSpacingMm(lambdaNm, dMm, lMeters);
+  }
+
+  /**
+   * 計算單一屏幕位置 y (mm) 處的光強度 (0..1)
+   * 含雙狹縫干涉因子 cos^2(π d y / (λ L)) 與單狹縫繞射包絡 sinc^2(π a y / (λ L))
+   * @param {Object} params
+   * @param {number} params.yMm - 屏幕位置 (mm)
+   * @param {number} params.lambdaNm - 波長 (nm)
+   * @param {number} params.dMm - 狹縫間距 (mm)
+   * @param {number} params.aMm - 單狹縫寬度 (mm)
+   * @param {number} params.lMeters - 屏幕距離 (m)
+   * @param {number} [params.slitCount=2] - 狹縫開啟數 (1 或 2)
+   */
+  function computeIntensityAtY(params) {
+    var yMm = Number(params.yMm);
+    var lambdaNm = Number(params.lambdaNm);
+    var dMm = Number(params.dMm);
+    var aMm = Number(params.aMm);
+    var lMeters = Number(params.lMeters);
+    var slitCount = params.slitCount === 1 ? 1 : 2;
+
+    var lambdaMm = lambdaNm * 1e-6;
+    var lMm = lMeters * 1000;
+
+    // 單狹縫繞射包絡 sinc^2(beta)
+    var beta = (Math.PI * aMm * yMm) / (lambdaMm * lMm);
+    var envelope = 1;
+    if (Math.abs(beta) > 1e-9) {
+      var s = Math.sin(beta) / beta;
+      envelope = s * s;
+    }
+
+    if (slitCount === 1) {
+      return {
+        total: envelope,
+        envelope: envelope,
+        interference: 1
+      };
+    }
+
+    // 雙狹縫干涉因子 cos^2(alpha)
+    var alpha = (Math.PI * dMm * yMm) / (lambdaMm * lMm);
+    var cosA = Math.cos(alpha);
+    var interference = cosA * cosA;
+
+    return {
+      total: interference * envelope,
+      envelope: envelope,
+      interference: interference
+    };
+  }
+
+  /**
+   * 計算特定比值下的缺級級數（當 d / a 為整數 k 時，第 ±k, ±2k, ... 級亮紋缺級）
+   */
+  function getMissingOrders(dMm, aMm, maxOrder) {
+    var ratio = dMm / aMm;
+    var limit = maxOrder || 10;
+    var missing = [];
+    for (var m = 1; m <= limit; m++) {
+      // 若 m * (a / d) 非常接近正整數，即為缺級
+      var k = m / ratio;
+      if (Math.abs(k - Math.round(k)) < 1e-4 && Math.round(k) >= 1) {
+        missing.push(m);
+      }
+    }
+    return missing;
+  }
+
+  /**
+   * 計算屏幕上某點 yMm 到兩狹縫的路徑差 δ (nm) 與波長倍數
+   */
+  function computePathDifference(yMm, lambdaNm, dMm, lMeters) {
+    var lMm = lMeters * 1000;
+    // 遠場近似 δ = d * y / L（單位換算為 nm）
+    var deltaMm = (dMm * yMm) / lMm;
+    var deltaNm = deltaMm * 1e6;
+    var wavelengths = deltaNm / lambdaNm;
+    return {
+      deltaNm: deltaNm,
+      wavelengths: wavelengths
+    };
+  }
+
+  /**
+   * 依據波長 (nm) 計算真實可見光譜近似 RGB
+   */
+  function wavelengthToSpectrumRgb(wavelengthNm) {
+    var w = Number(wavelengthNm);
+    var r = 0, g = 0, b = 0, factor = 1;
+
+    if (w >= 380 && w < 440) {
+      r = -(w - 440) / (440 - 380);
+      g = 0;
+      b = 1;
+    } else if (w >= 440 && w < 490) {
+      r = 0;
+      g = (w - 440) / (490 - 440);
+      b = 1;
+    } else if (w >= 490 && w < 510) {
+      r = 0;
+      g = 1;
+      b = -(w - 510) / (510 - 490);
+    } else if (w >= 510 && w < 580) {
+      r = (w - 510) / (580 - 510);
+      g = 1;
+      b = 0;
+    } else if (w >= 580 && w < 645) {
+      r = 1;
+      g = -(w - 645) / (645 - 580);
+      b = 0;
+    } else if (w >= 645 && w <= 700) {
+      r = 1;
+      g = 0;
+      b = 0;
+    }
+
+    if (w >= 380 && w < 420) {
+      factor = 0.40 + 0.60 * (w - 380) / (420 - 380);
+    } else if (w >= 420 && w <= 700) {
+      factor = 1.0;
+    }
+
+    var band = '可見光';
+    if (w < 450) band = '紫光';
+    else if (w < 495) band = '藍光';
+    else if (w < 570) band = '綠光';
+    else if (w < 590) band = '黃光';
+    else if (w < 620) band = '橙光';
+    else band = '紅光';
+
+    return {
+      r: Math.round(255 * Math.pow(r * factor, 0.85)),
+      g: Math.round(255 * Math.pow(g * factor, 0.85)),
+      b: Math.round(255 * Math.pow(b * factor, 0.85)),
+      band: band
+    };
+  }
+
+  return {
+    LIMITS: LIMITS,
+    computeFringeSpacingMm: computeFringeSpacingMm,
+    brightFringePositionMm: brightFringePositionMm,
+    darkFringePositionMm: darkFringePositionMm,
+    computeIntensityAtY: computeIntensityAtY,
+    getMissingOrders: getMissingOrders,
+    computePathDifference: computePathDifference,
+    wavelengthToSpectrumRgb: wavelengthToSpectrumRgb
+  };
+});
+
+  </script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var P = window.DoubleSlitPhysics;
+
+      var state = {
+        step: 1,
+        maxUnlockedStep: 1,
+        prediction: null, // 'blocked' | 'cancel'
+        slitCount: 1, // 第2步預設開單縫
+        lambdaNm: 520,
+        dMm: 0.25,
+        aMm: 0.05,
+        lMeters: 1.0,
+        selectedYMm: 0, // 點擊屏幕選取位置 (mm)
+        isPlaying: false, // 進入每步預設暫停
+        speedMultiplier: 1,
+        wavePhase: 0.35, // 波前推進相位（單位：波長數）
+        // 第5步三參數依序解鎖
+        sandboxStage: 0, // 0: 預測λ, 1: 調λ+預測d, 2: 調d+預測L, 3: 全解鎖
+        predLambda: null,
+        predD: null,
+        predL: null,
+        // 第6步公式逐步揭露
+        formulaRevealCount: 0,
+        formulaFocusIdx: -1,
+        // 第7步缺級挑戰
+        missingPred: null,
+        missingVerified: false,
+        // 第8步迷思
+        mythIndex: 0,
+        // 第9步遷移題
+        transferChoice: null
+      };
+
+      var STEPS = [
+        { id: 1, title: '多出來的暗紋哪裡來？', guide: '先選你的<span class="kw">預測</span>，再進實驗室驗證。' },
+        { id: 2, title: '單狹縫暖身 vs 雙狹縫', guide: '先看單縫亮帶，再<span class="kw">打開第二條縫</span>觀察變化。' },
+        { id: 3, title: '波前特寫：交點決定亮暗', guide: '按播放或<span class="kw">單步前進</span>，看波峰與波谷如何交會。' },
+        { id: 4, title: '路徑差登場：誰慢了半拍？', guide: '點擊右側或下方屏幕，看兩條路的<span class="kw">長度差 δ</span>。' },
+        { id: 5, title: '三參數實驗：條紋怎麼變？', guide: '依序預測並調整<span class="kw">波長、縫距、屏距</span>。' },
+        { id: 6, title: '公式出場：亮紋間距怎麼算', guide: '點擊公式每一項，對照剛才的實驗規律。' },
+        { id: 7, title: '缺級挑戰：消失的第 3 級', guide: '把 d/a 調到 <span class="kw">3</span>，預測哪一條亮紋會消失。' },
+        { id: 8, title: '破解三大常見迷思', guide: '逐一點開三個迷思，記住背後的<span class="kw">生活比喻</span>。' },
+        { id: 9, title: '生活遷移題與總結', guide: '用波的干涉解釋生活現象，帶走核心記憶點。' }
+      ];
+
+      var MYTHS = [
+        {
+          myth: '「暗紋是光被狹縫擋住了，沒有光到那裡。」',
+          metaphor: '只開一條縫時，那裡明明是亮的；多開一條縫反而變暗，代表兩道光都到了，只是像兩股反方向推的力氣，剛好互相抵消。',
+          takeaway: '暗紋處兩道光都到得了，是抵消，不是沒來。'
+        },
+        {
+          myth: '「波長越長，亮暗條紋排得越密。」',
+          metaphor: '波長像步伐大小，步伐越大，要差半步或一步就得走更開；所以紅光波長較長，條紋間距反而比藍光更寬更開。',
+          takeaway: '波長 λ 越大，條紋間距 Δy 越大（紅開藍密）。'
+        },
+        {
+          myth: '「單條狹縫開得越寬，雙縫條紋就越開。」',
+          metaphor: '決定條紋排得開不開，是兩條縫之間的「間距 d」；單縫寬度 a 只會改變外框大包絡的寬窄，以及哪幾級會缺級。',
+          takeaway: '決定疏密的是縫間距 d，不是單縫寬 a。'
+        }
+      ];
+
+      var stepStrip = document.getElementById('stepStrip');
+      var guideBanner = document.getElementById('guideBanner');
+      var readoutStrip = document.getElementById('readoutStrip');
+      var stepTitle = document.getElementById('stepTitle');
+      var stepBadge = document.getElementById('stepBadge');
+      var stepBody = document.getElementById('stepBody');
+      var prevBtn = document.getElementById('prevBtn');
+      var nextBtn = document.getElementById('nextBtn');
+      var playPauseBtn = document.getElementById('playPauseBtn');
+      var stepWaveBtn = document.getElementById('stepWaveBtn');
+      var statusSummary = document.getElementById('statusSummary');
+      var canvas = document.getElementById('simCanvas');
+      var canvasWrap = document.getElementById('canvasWrap');
+      var ctx = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        var rect = canvasWrap.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resizeCanvas);
+
+      function goToStep(targetStep) {
+        if (targetStep < 1 || targetStep > STEPS.length) return;
+        if (targetStep > state.maxUnlockedStep) return;
+        state.step = targetStep;
+        // 進入每步時預設暫停
+        state.isPlaying = false;
+
+        if (targetStep === 1) {
+          state.slitCount = 2;
+        } else if (targetStep === 2) {
+          state.slitCount = 1;
+          state.lambdaNm = 520;
+          state.dMm = 0.25;
+          state.lMeters = 1.0;
+          state.aMm = 0.05;
+        } else if (targetStep === 3) {
+          state.slitCount = 2;
+        } else if (targetStep === 4) {
+          state.slitCount = 2;
+          var dy = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters);
+          state.selectedYMm = dy; // 預設停在第一亮紋
+        } else if (targetStep === 5) {
+          state.slitCount = 2;
+        } else if (targetStep === 7) {
+          state.slitCount = 2;
+          state.dMm = 0.30;
+          state.lambdaNm = 550;
+          state.lMeters = 1.0;
+          if (!state.missingVerified) {
+            state.aMm = 0.05;
+          }
+        }
+        renderAll();
+      }
+
+      function canAdvance() {
+        if (state.step === 1 && !state.prediction) return false;
+        if (state.step === 6 && state.formulaRevealCount < 4) return false;
+        return true;
+      }
+
+      function unlockAndNext() {
+        if (!canAdvance()) return;
+        if (state.step < STEPS.length) {
+          if (state.step + 1 > state.maxUnlockedStep) {
+            state.maxUnlockedStep = state.step + 1;
+          }
+          goToStep(state.step + 1);
+        }
+      }
+
+      function renderStepStrip() {
+        stepStrip.innerHTML = '';
+        for (var i = 1; i <= STEPS.length; i++) {
+          (function (idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'step-pill';
+            if (idx === state.step) btn.className += ' active';
+            else if (idx <= state.maxUnlockedStep) btn.className += ' done';
+            btn.textContent = String(idx);
+            btn.disabled = idx > state.maxUnlockedStep;
+            btn.setAttribute('aria-label', '第 ' + idx + ' 步：' + STEPS[idx - 1].title);
+            btn.addEventListener('click', function () { goToStep(idx); });
+            stepStrip.appendChild(btn);
+          })(i);
+        }
+      }
+
+      function renderReadouts() {
+        var spec = P.wavelengthToSpectrumRgb(state.lambdaNm);
+        var dy = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters);
+        var chips = [];
+
+        chips.push({ label: '波長 λ', val: Math.round(state.lambdaNm) + ' nm (' + spec.band + ')' });
+        if (state.step >= 2 && state.slitCount === 2) {
+          chips.push({ label: '亮紋間距 Δy', val: dy.toFixed(2) + ' mm' });
+        }
+        if (state.step === 4) {
+          var pd = P.computePathDifference(state.selectedYMm, state.lambdaNm, state.dMm, state.lMeters);
+          chips.push({ label: '路徑差 δ', val: pd.wavelengths.toFixed(2) + ' λ' });
+        }
+        if (state.step >= 7) {
+          chips.push({ label: '比值 d/a', val: (state.dMm / state.aMm).toFixed(1) });
+        }
+
+        readoutStrip.innerHTML = chips.map(function (c) {
+          return '<div class="readout-chip"><span class="label">' + c.label + '</span><span class="val">' + c.val + '</span></div>';
+        }).join('');
+
+        playPauseBtn.textContent = state.isPlaying ? '暫停' : '播放';
+        playPauseBtn.classList.toggle('active', state.isPlaying);
+
+        var showMarkers = (state.step === 3 || state.step === 4) && state.slitCount === 2;
+        document.getElementById('legendConstructive').style.display = showMarkers ? 'inline-flex' : 'none';
+        document.getElementById('legendDestructive').style.display = showMarkers ? 'inline-flex' : 'none';
+
+        var dotWave = document.querySelector('#legendRow .dot');
+        if (dotWave) dotWave.style.background = 'rgb(' + spec.r + ',' + spec.g + ',' + spec.b + ')';
+
+        statusSummary.textContent = 'd=' + state.dMm.toFixed(2) + ' mm / L=' + state.lMeters.toFixed(2) + ' m / a=' + state.aMm.toFixed(2) + ' mm';
+      }
+
+      function makeSlider(id, label, valText, min, max, step, val) {
+        return (
+          '<div class="control-row">' +
+            '<div class="control-label-row"><span>' + label + '</span><span class="control-val" id="' + id + 'Val">' + valText + '</span></div>' +
+            '<input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '">' +
+          '</div>'
+        );
+      }
+
+      function renderStepBody() {
+        var s = STEPS[state.step - 1];
+        guideBanner.innerHTML = s.guide;
+        stepTitle.textContent = s.title;
+        stepBadge.textContent = '步驟 ' + state.step + ' / ' + STEPS.length;
+
+        var dy = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters);
+        var html = '';
+
+        if (state.step === 1) {
+          html += '<div class="story-card">' +
+            '<p>一道光穿過兩條很細的狹縫，照在右邊的牆上。</p>' +
+            '<p>出現的不是兩條亮線，而是<span class="kw">一排亮暗相間</span>的條紋。</p>' +
+            '<p>你認為多出來的「暗紋」是怎麼來的？</p>' +
+          '</div>';
+          html += '<div class="controls-box">' +
+            '<button type="button" class="choice-btn' + (state.prediction === 'blocked' ? ' selected' : '') + '" data-pred="blocked">擋住派：暗紋的地方是因為光被狹縫擋板擋住了。</button>' +
+            '<button type="button" class="choice-btn' + (state.prediction === 'cancel' ? ' selected' : '') + '" data-pred="cancel">抵消派：兩道光都有到暗紋處，但步調相反互相抵消。</button>' +
+          '</div>';
+          html += state.prediction
+            ? '<div class="feedback-box ok">已記下你的預測！請按下方「下一步」進入實驗室。</div>'
+            : '<div class="feedback-box">請先選一個預測，才會解鎖實驗室。</div>';
+        } else if (state.step === 2) {
+          var predStr = state.prediction === 'blocked' ? '你預測「擋住派」：暗紋是光被擋住。' : '你預測「抵消派」：暗紋是兩道光互相抵消。';
+          html += '<div class="story-card">' +
+            '<p>現在只開<span class="kw">一條狹縫</span>，光打到牆上是一整片亮帶。</p>' +
+            '<p>按下「打開第二條縫」，看看原本亮的地方發生什麼事。</p>' +
+          '</div>';
+          html += '<div class="btn-grid-2">' +
+            '<button type="button" class="action-btn' + (state.slitCount === 1 ? ' primary' : '') + '" id="slit1Btn">只開 1 條縫</button>' +
+            '<button type="button" class="action-btn' + (state.slitCount === 2 ? ' primary' : '') + '" id="slit2Btn">打開 2 條縫</button>' +
+          '</div>';
+          html += '<div class="compare-grid">' +
+            '<div class="compare-box"><div class="box-title">我的預測</div>' + predStr + '</div>' +
+            '<div class="compare-box"><div class="box-title">實際結果</div>開 1 條縫時明明是亮的，多開第 2 條縫反而出現<span class="kw">暗紋</span>，證明光有到、是兩道光互相抵消。</div>' +
+          '</div>';
+        } else if (state.step === 3) {
+          html += '<div class="story-card">' +
+            '<p>看上方的俯視波前：實線代表<span class="kw">波峰</span>，兩組圓弧會在空間交疊。</p>' +
+            '<p>黃點是「波峰遇波峰」，兩道波步調一致變得<span class="kw">更亮</span>。</p>' +
+            '<p>紅叉是「波峰遇波谷」，步調差半步而<span class="kw">互相抵消</span>。</p>' +
+          '</div>';
+          html += '<div class="feedback-box">建議按左上角「單步前進」一格格看波前推進，或按「播放」搭配 0.25x 慢動作觀察。</div>';
+        } else if (state.step === 4) {
+          var pd = P.computePathDifference(state.selectedYMm, state.lambdaNm, state.dMm, state.lMeters);
+          var ratio = Math.abs(pd.wavelengths);
+          var nearestInt = Math.round(ratio);
+          var nearestHalf = Math.round(ratio - 0.5) + 0.5;
+          var kind = Math.abs(ratio - nearestInt) < 0.15 ? '亮紋（整數倍波長）' : (Math.abs(ratio - nearestHalf) < 0.15 ? '暗紋（半整數倍波長）' : '過渡區');
+          html += '<div class="story-card">' +
+            '<p>在左側點擊屏幕任一點，畫出它到上、下兩縫的兩條路徑。</p>' +
+            '<p>走得比較遠的那條路多出來的長度，就叫<span class="kw">路徑差</span>。</p>' +
+          '</div>';
+          html += '<div class="symbol-note">符號初次見面：<strong>δ</strong>（念作「得耳塔」），白話是「兩條路的長度差」。整數個波長＝步調對齊（亮）；半整數＝差半步（暗）。</div>';
+          html += '<div class="btn-grid-3">' +
+            '<button type="button" class="action-btn" id="jumpCenterBtn">中央亮紋 (0λ)</button>' +
+            '<button type="button" class="action-btn" id="jumpDark1Btn">第 1 暗紋 (0.5λ)</button>' +
+            '<button type="button" class="action-btn" id="jumpBright1Btn">第 1 亮紋 (1λ)</button>' +
+          '</div>';
+          html += '<div class="feedback-box ok">目前選中位置 y = ' + state.selectedYMm.toFixed(2) + ' mm｜路徑差 δ = <strong>' + pd.wavelengths.toFixed(2) + ' λ</strong>（' + kind + '）</div>';
+        } else if (state.step === 5) {
+          html += '<div class="story-card"><p>每次只動一個變因，先猜結果再拉滑桿驗證（下方已疊上<span class="kw">強度曲線</span>）：</p></div>';
+          if (state.sandboxStage === 0) {
+            html += '<div class="feedback-box">第 1 關：如果把波長 λ 調大（往紅光移動），條紋間距會變寬還是變密？</div>';
+            html += '<div class="btn-grid-2">' +
+              '<button type="button" class="choice-btn" data-sb-lambda="wider">變寬（條紋拉開）</button>' +
+              '<button type="button" class="choice-btn" data-sb-lambda="narrower">變密（條紋變擠）</button>' +
+            '</div>';
+          } else {
+            html += '<div class="controls-box">' + makeSlider('lambdaSlider', '波長 λ（決定光色）', Math.round(state.lambdaNm) + ' nm', 380, 700, 5, state.lambdaNm) + '</div>';
+            if (state.sandboxStage === 1) {
+              html += '<div class="feedback-box">第 2 關：把兩條縫的間距 d 拉大，條紋會變寬還是變擠？</div>';
+              html += '<div class="btn-grid-2">' +
+                '<button type="button" class="choice-btn" data-sb-d="wider">變寬</button>' +
+                '<button type="button" class="choice-btn" data-sb-d="narrower">變擠（更密）</button>' +
+              '</div>';
+            } else {
+              html += '<div class="controls-box">' + makeSlider('dSlider', '狹縫間距 d', state.dMm.toFixed(2) + ' mm', 0.05, 0.50, 0.01, state.dMm) + '</div>';
+              if (state.sandboxStage === 2) {
+                html += '<div class="feedback-box">第 3 關：把屏幕距離 L 拉遠，條紋間距會怎麼變？</div>';
+                html += '<div class="btn-grid-2">' +
+                  '<button type="button" class="choice-btn" data-sb-l="wider">變寬（越遠越開）</button>' +
+                  '<button type="button" class="choice-btn" data-sb-l="narrower">變密</button>' +
+                '</div>';
+              } else {
+                html += '<div class="controls-box">' + makeSlider('lSlider', '屏幕距離 L', state.lMeters.toFixed(2) + ' m', 0.50, 2.00, 0.05, state.lMeters) + '</div>';
+              }
+            }
+          }
+        } else if (state.step === 6) {
+          var terms = [
+            { sym: 'Δy', desc: '念作「得耳塔 y」，相鄰兩條亮紋的間距（目前 ' + dy.toFixed(2) + ' mm）' },
+            { sym: 'λ',  desc: '念作「藍打」，光的波長；波長越長條紋越開（' + Math.round(state.lambdaNm) + ' nm）' },
+            { sym: 'L',  desc: '狹縫到屏幕的距離；屏幕越遠條紋越開（' + state.lMeters.toFixed(2) + ' m）' },
+            { sym: 'd',  desc: '兩條狹縫的中心距離；縫越開條紋反而越擠（' + state.dMm.toFixed(2) + ' mm）' }
+          ];
+          var fi = state.formulaFocusIdx;
+          html += '<div class="story-card"><p>把剛才的三個規律收斂成一個算式：分子越大條紋越開，分母越大條紋越擠。</p></div>';
+          html += '<div class="formula-box">' +
+            '<div class="formula-main">' +
+              '<button type="button" class="formula-term' + (fi === 0 ? ' active' : '') + '" data-term="0">Δy</button>' +
+              '<span>=</span>' +
+              '<button type="button" class="formula-term' + (fi === 1 ? ' active' : '') + '" data-term="1">λ</button>' +
+              '<button type="button" class="formula-term' + (fi === 2 ? ' active' : '') + '" data-term="2">L</button>' +
+              '<span>/</span>' +
+              '<button type="button" class="formula-term' + (fi === 3 ? ' active' : '') + '" data-term="3">d</button>' +
+            '</div>';
+          for (var ti = 0; ti < state.formulaRevealCount && ti < terms.length; ti++) {
+            html += '<div class="formula-line' + (fi === ti ? ' active' : '') + '"><span class="formula-sym">' + terms[ti].sym + '</span><span>' + terms[ti].desc + '</span></div>';
+          }
+          html += '</div>';
+          if (state.formulaRevealCount < 4) {
+            html += '<button type="button" class="action-btn primary" id="formulaNextBtn">下一步說明（' + state.formulaRevealCount + ' / 4）</button>';
+          } else {
+            html += '<div class="feedback-box ok">四個符號都看懂了！已解鎖下一步。</div>';
+          }
+        } else if (state.step === 7) {
+          var ratioDa = (state.dMm / state.aMm).toFixed(1);
+          html += '<div class="story-card">' +
+            '<p>固定縫距 d = 0.30 mm。若把單縫寬度 a 調到 0.10 mm，使 <span class="kw">d / a = 3</span>，</p>' +
+            '<p>下方虛線（單縫繞射包絡）的零點會剛好蓋住第幾級亮紋，讓它「不見」？</p>' +
+          '</div>';
+          html += '<div class="btn-grid-3">' +
+            '<button type="button" class="choice-btn' + (state.missingPred === '2' ? ' selected' : '') + '" data-miss="2">第 2 級</button>' +
+            '<button type="button" class="choice-btn' + (state.missingPred === '3' ? ' selected' : '') + '" data-miss="3">第 3 級</button>' +
+            '<button type="button" class="choice-btn' + (state.missingPred === '4' ? ' selected' : '') + '" data-miss="4">第 4 級</button>' +
+          '</div>';
+          if (state.missingPred) {
+            html += '<div class="controls-box">' + makeSlider('aSlider', '單縫寬度 a（目前 d/a = ' + ratioDa + '）', state.aMm.toFixed(2) + ' mm', 0.05, 0.15, 0.01, state.aMm) + '</div>';
+            if (Math.abs((state.dMm / state.aMm) - 3) < 0.05) {
+              html += '<div class="feedback-box ok">看下方強度曲線：第 ±3 級亮紋的位置剛好撞上虛線包絡的零點，所以被「吃掉」了（這叫缺級，不是故障）。</div>';
+            } else {
+              html += '<div class="feedback-box">把單縫寬度 a 調到 0.10 mm，讓 d / a = 3 看看第 3 級亮紋！</div>';
+            }
+          }
+        } else if (state.step === 8) {
+          var m = MYTHS[state.mythIndex];
+          html += '<div class="story-card"><p>這三個是同學最常搞混的<span class="kw">迷思</span>，請逐一點開看懂比喻：</p></div>';
+          html += '<div class="btn-grid-3">' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 0 ? ' selected' : '') + '" data-myth="0">迷思 1</button>' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 1 ? ' selected' : '') + '" data-myth="1">迷思 2</button>' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 2 ? ' selected' : '') + '" data-myth="2">迷思 3</button>' +
+          '</div>';
+          html += '<div class="myth-card">' +
+            '<div><div class="myth-block-label">迷思原文</div><div class="myth-block-text">' + m.myth + '</div></div>' +
+            '<div><div class="myth-block-label">生活比喻解法</div><div class="myth-block-text">' + m.metaphor + '</div></div>' +
+            '<div class="memory-card">記憶點：' + m.takeaway + '</div>' +
+          '</div>';
+        } else if (state.step === 9) {
+          html += '<div class="story-card"><p>情境題：CD 碟片背面的微細軌道間距非常小，照到白光會出現<span class="kw">彩虹色條紋</span>，為什麼？</p></div>';
+          html += '<div class="controls-box">' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'A' ? ' selected' : '') + '" data-ans="A">A. 不同顏色的波長 λ 不同，干涉亮紋的間距與位置也不同，因此分開成彩虹。</button>' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'B' ? ' selected' : '') + '" data-ans="B">B. 碟片表面塗了七彩顏料，照光才會顯色。</button>' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'C' ? ' selected' : '') + '" data-ans="C">C. 所有顏色的亮紋都疊在同一個位置，只是人眼看錯了。</button>' +
+          '</div>';
+          if (state.transferChoice === 'A') {
+            html += '<div class="feedback-box ok">完全正確！波長越長偏轉角越大，各色光的建設性干涉落在不同位置，就展開成彩虹。</div>';
+          } else if (state.transferChoice) {
+            html += '<div class="feedback-box warn">再想一下：CD 軌道像一排超密細縫，不同波長 λ 算出的亮紋位置不同喔。</div>';
+          }
+          html += '<div class="memory-card">記住：亮，是兩道波擊掌；暗，是兩道波抵消。</div>';
+        }
+
+        stepBody.innerHTML = html;
+        bindStepEvents();
+      }
+
+      function bindStepEvents() {
+        stepBody.querySelectorAll('[data-pred]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.prediction = btn.getAttribute('data-pred');
+            renderAll();
+          });
+        });
+
+        var s1 = document.getElementById('slit1Btn');
+        var s2 = document.getElementById('slit2Btn');
+        if (s1) s1.addEventListener('click', function () { state.slitCount = 1; renderAll(); });
+        if (s2) s2.addEventListener('click', function () { state.slitCount = 2; renderAll(); });
+
+        var jCenter = document.getElementById('jumpCenterBtn');
+        var jDark1 = document.getElementById('jumpDark1Btn');
+        var jBright1 = document.getElementById('jumpBright1Btn');
+        if (jCenter) jCenter.addEventListener('click', function () { state.selectedYMm = 0; renderAll(); });
+        if (jDark1) jDark1.addEventListener('click', function () { state.selectedYMm = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters) * 0.5; renderAll(); });
+        if (jBright1) jBright1.addEventListener('click', function () { state.selectedYMm = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters); renderAll(); });
+
+        stepBody.querySelectorAll('[data-sb-lambda]').forEach(function (b) {
+          b.addEventListener('click', function () { state.predLambda = b.getAttribute('data-sb-lambda'); state.sandboxStage = Math.max(state.sandboxStage, 1); renderAll(); });
+        });
+        stepBody.querySelectorAll('[data-sb-d]').forEach(function (b) {
+          b.addEventListener('click', function () { state.predD = b.getAttribute('data-sb-d'); state.sandboxStage = Math.max(state.sandboxStage, 2); renderAll(); });
+        });
+        stepBody.querySelectorAll('[data-sb-l]').forEach(function (b) {
+          b.addEventListener('click', function () { state.predL = b.getAttribute('data-sb-l'); state.sandboxStage = Math.max(state.sandboxStage, 3); renderAll(); });
+        });
+
+        var lamSl = document.getElementById('lambdaSlider');
+        if (lamSl) {
+          lamSl.addEventListener('input', function () {
+            state.lambdaNm = Number(lamSl.value);
+            var el = document.getElementById('lambdaSliderVal');
+            if (el) el.textContent = Math.round(state.lambdaNm) + ' nm';
+            renderReadouts();
+          });
+          lamSl.addEventListener('change', renderAll);
+        }
+
+        var dSl = document.getElementById('dSlider');
+        if (dSl) {
+          dSl.addEventListener('input', function () {
+            state.dMm = Number(dSl.value);
+            var el = document.getElementById('dSliderVal');
+            if (el) el.textContent = state.dMm.toFixed(2) + ' mm';
+            renderReadouts();
+          });
+          dSl.addEventListener('change', renderAll);
+        }
+
+        var lSl = document.getElementById('lSlider');
+        if (lSl) {
+          lSl.addEventListener('input', function () {
+            state.lMeters = Number(lSl.value);
+            var el = document.getElementById('lSliderVal');
+            if (el) el.textContent = state.lMeters.toFixed(2) + ' m';
+            renderReadouts();
+          });
+          lSl.addEventListener('change', renderAll);
+        }
+
+        var fNext = document.getElementById('formulaNextBtn');
+        if (fNext) {
+          fNext.addEventListener('click', function () {
+            if (state.formulaRevealCount < 4) {
+              state.formulaRevealCount += 1;
+              state.formulaFocusIdx = state.formulaRevealCount - 1;
+              renderAll();
+            }
+          });
+        }
+        stepBody.querySelectorAll('[data-term]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = Number(btn.getAttribute('data-term'));
+            if (idx + 1 > state.formulaRevealCount) state.formulaRevealCount = idx + 1;
+            state.formulaFocusIdx = idx;
+            renderAll();
+          });
+        });
+
+        stepBody.querySelectorAll('[data-miss]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.missingPred = btn.getAttribute('data-miss');
+            renderAll();
+          });
+        });
+
+        var aSl = document.getElementById('aSlider');
+        if (aSl) {
+          aSl.addEventListener('input', function () {
+            state.aMm = Number(aSl.value);
+            if (Math.abs((state.dMm / state.aMm) - 3) < 0.05) state.missingVerified = true;
+            var el = document.getElementById('aSliderVal');
+            if (el) el.textContent = state.aMm.toFixed(2) + ' mm';
+            renderReadouts();
+          });
+          aSl.addEventListener('change', renderAll);
+        }
+
+        stepBody.querySelectorAll('[data-myth]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.mythIndex = Number(btn.getAttribute('data-myth'));
+            renderAll();
+          });
+        });
+
+        stepBody.querySelectorAll('[data-ans]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.transferChoice = btn.getAttribute('data-ans');
+            renderAll();
+          });
+        });
+      }
+
+      function renderNavButtons() {
+        prevBtn.disabled = state.step <= 1;
+        if (state.step >= STEPS.length) {
+          nextBtn.textContent = '已完成全部步驟';
+          nextBtn.disabled = true;
+        } else if (state.step === 1 && !state.prediction) {
+          nextBtn.textContent = '請先選擇預測';
+          nextBtn.disabled = true;
+        } else if (state.step === 6 && state.formulaRevealCount < 4) {
+          nextBtn.textContent = '請先看完全部 4 個符號';
+          nextBtn.disabled = true;
+        } else {
+          nextBtn.textContent = '下一步';
+          nextBtn.disabled = false;
+        }
+      }
+
+      function renderAll() {
+        renderStepStrip();
+        renderReadouts();
+        renderStepBody();
+        renderNavButtons();
+      }
+
+      playPauseBtn.addEventListener('click', function () {
+        state.isPlaying = !state.isPlaying;
+        renderReadouts();
+      });
+
+      stepWaveBtn.addEventListener('click', function () {
+        state.isPlaying = false;
+        state.wavePhase = (state.wavePhase + 0.25) % 1000;
+        renderReadouts();
+      });
+
+      document.querySelectorAll('.speed-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          state.speedMultiplier = Number(btn.getAttribute('data-speed'));
+          document.querySelectorAll('.speed-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+        });
+      });
+
+      prevBtn.addEventListener('click', function () { goToStep(state.step - 1); });
+      nextBtn.addEventListener('click', unlockAndNext);
+
+      // 點擊 Canvas 選取屏幕位置 yMm（同時支援俯視右側屏幕與下方條紋圖）
+      var Y_RANGE_MM = 18; // 屏幕可視半寬 ±18 mm
+      canvas.addEventListener('click', function (ev) {
+        var rect = canvas.getBoundingClientRect();
+        var x = ev.clientX - rect.left;
+        var y = ev.clientY - rect.top;
+        var w = rect.width;
+        var h = rect.height;
+
+        var topBottom = h * 0.54;
+        var stripLeft = w * 0.10;
+        var stripRight = w * 0.92;
+
+        if (y > topBottom) {
+          // 點擊下方條紋圖／強度圖區
+          var t = (x - stripLeft) / (stripRight - stripLeft);
+          t = Math.max(0, Math.min(1, t));
+          state.selectedYMm = (t * 2 - 1) * Y_RANGE_MM;
+          renderAll();
+        } else {
+          // 點擊上方俯視圖右側屏幕附近
+          var scrTop = h * 0.10;
+          var scrBot = h * 0.46;
+          var ty = (y - scrTop) / (scrBot - scrTop);
+          ty = Math.max(0, Math.min(1, ty));
+          state.selectedYMm = (0.5 - ty) * 2 * Y_RANGE_MM;
+          renderAll();
+        }
+      });
+
+      function drawDoubleArrow(x1, y1, x2, y2, color) {
+        var head = 6;
+        var ang = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // 起點箭頭
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + head * Math.cos(ang - Math.PI / 6), y1 + head * Math.sin(ang - Math.PI / 6));
+        ctx.lineTo(x1 + head * Math.cos(ang + Math.PI / 6), y1 + head * Math.sin(ang + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+
+        // 終點箭頭
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - head * Math.cos(ang - Math.PI / 6), y2 - head * Math.sin(ang - Math.PI / 6));
+        ctx.lineTo(x2 - head * Math.cos(ang + Math.PI / 6), y2 - head * Math.sin(ang + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+
+        // 起訖端點短線
+        var perpX = -Math.sin(ang) * 5;
+        var perpY = Math.cos(ang) * 5;
+        ctx.beginPath();
+        ctx.moveTo(x1 - perpX, y1 - perpY); ctx.lineTo(x1 + perpX, y1 + perpY);
+        ctx.moveTo(x2 - perpX, y2 - perpY); ctx.lineTo(x2 + perpX, y2 + perpY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawScene(w, h) {
+        var spec = P.wavelengthToSpectrumRgb(state.lambdaNm);
+        var specRgb = spec.r + ',' + spec.g + ',' + spec.b;
+        var fontFam = getComputedStyle(document.body).fontFamily;
+        var monoFam = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+        // 背景暖灰漸層
+        var bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#F7F4EE');
+        bgGrad.addColorStop(1, '#FFFFFF');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // === 第一層：上方俯視波前圖 ===
+        var topMidY = h * 0.28;
+        var scrTop = h * 0.09;
+        var scrBot = h * 0.47;
+        var barrierX = w * 0.27;
+        var screenX = w * 0.87;
+        var laserEndX = w * 0.14;
+
+        // 1. 光源（雷射筆造型底座）
+        ctx.save();
+        var lGrad = ctx.createLinearGradient(w * 0.04, topMidY - 14, w * 0.04, topMidY + 14);
+        lGrad.addColorStop(0, '#4B5563');
+        lGrad.addColorStop(0.5, '#6B7280');
+        lGrad.addColorStop(1, '#1F2937');
+        ctx.fillStyle = lGrad;
+        ctx.beginPath();
+        ctx.roundRect(w * 0.03, topMidY - 14, laserEndX - w * 0.03, 28, 6);
+        ctx.fill();
+        ctx.fillStyle = 'rgb(' + specRgb + ')';
+        ctx.beginPath();
+        ctx.arc(laserEndX, topMidY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 12px ' + fontFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('雷射光源', (w * 0.03 + laserEndX) / 2, topMidY - 22);
+
+        // 入射平行光束
+        var inGrad = ctx.createLinearGradient(laserEndX, 0, barrierX, 0);
+        inGrad.addColorStop(0, 'rgba(' + specRgb + ', 0.42)');
+        inGrad.addColorStop(1, 'rgba(' + specRgb + ', 0.20)');
+        ctx.fillStyle = inGrad;
+        ctx.fillRect(laserEndX, topMidY - 28, barrierX - laserEndX, 56);
+        ctx.restore();
+
+        // 狹縫像素半距（隨 dMm 動態變化）
+        var slitHalfPx = 12 + ((state.dMm - 0.05) / 0.45) * 30;
+        var slit1Y = state.slitCount === 1 ? topMidY : topMidY - slitHalfPx;
+        var slit2Y = topMidY + slitHalfPx;
+
+        // 2. 波前同心圓弧（裁切在擋板右側到屏幕之間）
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(barrierX + 3, scrTop, screenX - barrierX - 5, scrBot - scrTop);
+        ctx.clip();
+
+        // 視覺波長間距（隨 lambdaNm 同步變化）
+        var wavePx = 14 + ((state.lambdaNm - 380) / 320) * 16;
+        var maxR = (screenX - barrierX) * 1.15;
+        var phaseOffset = (state.wavePhase % 1) * wavePx;
+
+        ctx.strokeStyle = 'rgba(' + specRgb + ', 0.72)';
+        ctx.lineWidth = 1.6;
+        for (var r = phaseOffset; r < maxR; r += wavePx) {
+          if (r < 4) continue;
+          ctx.beginPath();
+          ctx.arc(barrierX + 3, slit1Y, r, -Math.PI * 0.46, Math.PI * 0.46);
+          ctx.stroke();
+          if (state.slitCount === 2) {
+            ctx.beginPath();
+            ctx.arc(barrierX + 3, slit2Y, r, -Math.PI * 0.46, Math.PI * 0.46);
+            ctx.stroke();
+          }
+        }
+
+        // 第 3、4 步開啟建設性亮點與破壞性叉號標記層
+        if ((state.step === 3 || state.step === 4) && state.slitCount === 2) {
+          var maxN = Math.ceil(maxR / wavePx);
+          for (var n1 = 1; n1 <= maxN; n1++) {
+            var r1 = (n1 - 1 + (state.wavePhase % 1)) * wavePx;
+            if (r1 < 10) continue;
+            for (var n2 = 1; n2 <= maxN; n2++) {
+              // 建設性：n1 - n2 整數 (波峰遇波峰)
+              var r2c = (n2 - 1 + (state.wavePhase % 1)) * wavePx;
+              var ptC = intersectCirclesRight(barrierX + 3, slit1Y, r1, barrierX + 3, slit2Y, r2c);
+              if (ptC && ptC.x < screenX - 4 && ptC.y > scrTop + 6 && ptC.y < scrBot - 6) {
+                ctx.fillStyle = '#F59E0B';
+                ctx.beginPath();
+                ctx.arc(ptC.x, ptC.y, 3.2, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              // 破壞性：r2d 差半個波長
+              var r2d = (n2 - 0.5 + (state.wavePhase % 1)) * wavePx;
+              var ptD = intersectCirclesRight(barrierX + 3, slit1Y, r1, barrierX + 3, slit2Y, r2d);
+              if (ptD && ptD.x < screenX - 4 && ptD.y > scrTop + 6 && ptD.y < scrBot - 6) {
+                ctx.strokeStyle = '#D93829';
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.moveTo(ptD.x - 3, ptD.y - 3); ctx.lineTo(ptD.x + 3, ptD.y + 3);
+                ctx.moveTo(ptD.x + 3, ptD.y - 3); ctx.lineTo(ptD.x - 3, ptD.y + 3);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+        ctx.restore();
+
+        // 3. 狹縫擋板（黑色軌道立板）
+        ctx.save();
+        ctx.fillStyle = '#1F2937';
+        ctx.fillRect(barrierX - 3, scrTop, 6, scrBot - scrTop);
+        // 以亮線標出縫口
+        ctx.fillStyle = 'rgb(' + specRgb + ')';
+        ctx.fillRect(barrierX - 3, slit1Y - 3, 6, 6);
+        if (state.slitCount === 2) {
+          ctx.fillRect(barrierX - 3, slit2Y - 3, 6, 6);
+          // d 雙箭頭標記畫在擋板上方外側
+          drawDoubleArrow(barrierX, slit1Y, barrierX, slit2Y, '#1D1D1F');
+          ctx.fillStyle = '#1D1D1F';
+          ctx.font = '700 12px ' + monoFam;
+          ctx.textAlign = 'center';
+          ctx.fillText('d = ' + state.dMm.toFixed(2) + ' mm', barrierX, scrTop - 10);
+        } else {
+          ctx.fillStyle = '#1D1D1F';
+          ctx.font = '700 12px ' + fontFam;
+          ctx.textAlign = 'center';
+          ctx.fillText('單狹縫擋板', barrierX, scrTop - 10);
+        }
+        ctx.restore();
+
+        // 4. 右側直立米白屏幕板 & L 雙箭頭標記
+        ctx.save();
+        ctx.fillStyle = '#EFECE4';
+        ctx.strokeStyle = '#9CA3AF';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(screenX, scrTop, 8, scrBot - scrTop);
+        ctx.strokeRect(screenX, scrTop, 8, scrBot - scrTop);
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 12px ' + fontFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('屏幕', screenX + 4, scrTop - 10);
+
+        // L 雙箭頭畫在擋板與屏幕之間下方
+        var lArrowY = scrBot + 16;
+        drawDoubleArrow(barrierX, lArrowY, screenX, lArrowY, '#5C5C62');
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 12px ' + monoFam;
+        ctx.fillText('L = ' + state.lMeters.toFixed(2) + ' m', (barrierX + screenX) / 2, lArrowY + 15);
+        ctx.restore();
+
+        // 選中點 y 位置計算（供第4步路徑線與對齊線使用）
+        var selRatioScr = 0.5 - (state.selectedYMm / (2 * Y_RANGE_MM));
+        selRatioScr = Math.max(0.02, Math.min(0.98, selRatioScr));
+        var scrSelY = scrTop + selRatioScr * (scrBot - scrTop);
+
+        if (state.step === 4 && state.slitCount === 2) {
+          ctx.save();
+          ctx.strokeStyle = '#1D1D1F';
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(barrierX + 3, slit1Y); ctx.lineTo(screenX, scrSelY);
+          ctx.moveTo(barrierX + 3, slit2Y); ctx.lineTo(screenX, scrSelY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#D93829';
+          ctx.beginPath();
+          ctx.arc(screenX, scrSelY, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // === 第二層：下方屏幕實景條紋（正面直視直條紋） ===
+        var stripLeft = w * 0.10;
+        var stripRight = w * 0.92;
+        var stripW = stripRight - stripLeft;
+        var stripTop = state.step >= 5 ? h * 0.57 : h * 0.62;
+        var stripH = state.step >= 5 ? h * 0.15 : h * 0.24;
+
+        ctx.save();
+        ctx.fillStyle = '#111215';
+        ctx.strokeStyle = '#D1CBC0';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(stripLeft, stripTop, stripW, stripH);
+
+        var pxStep = 2;
+        for (var px = 0; px < stripW; px += pxStep) {
+          var yMm = ((px / stripW) * 2 - 1) * Y_RANGE_MM;
+          var inten = P.computeIntensityAtY({
+            yMm: yMm,
+            lambdaNm: state.lambdaNm,
+            dMm: state.dMm,
+            aMm: state.aMm,
+            lMeters: state.lMeters,
+            slitCount: state.slitCount
+          });
+          var visBright = Math.pow(inten.total, 0.72);
+          if (visBright > 0.01) {
+            ctx.fillStyle = 'rgba(' + specRgb + ', ' + visBright.toFixed(3) + ')';
+            ctx.fillRect(stripLeft + px, stripTop + 1, pxStep, stripH - 2);
+          }
+        }
+        ctx.strokeRect(stripLeft, stripTop, stripW, stripH);
+
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 12px ' + fontFam;
+        ctx.textAlign = 'left';
+        ctx.fillText('屏幕實景條紋（±' + Y_RANGE_MM + ' mm）', stripLeft, stripTop - 7);
+
+        // Δy 雙箭頭標記畫在條紋圖上（中央亮紋到第 1 亮紋）
+        if (state.slitCount === 2) {
+          var dyMm = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters);
+          var xCenter = stripLeft + stripW * 0.5;
+          var xFirst = stripLeft + ((dyMm / Y_RANGE_MM + 1) * 0.5) * stripW;
+          if (xFirst - xCenter > 14 && xFirst < stripRight - 10) {
+            var dyY = stripTop + stripH * 0.5;
+            drawDoubleArrow(xCenter, dyY, xFirst, dyY, '#FFFFFF');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '700 11px ' + monoFam;
+            ctx.textAlign = 'center';
+            ctx.fillText('Δy=' + dyMm.toFixed(2) + 'mm', (xCenter + xFirst) / 2, dyY - 10);
+          }
+        }
+
+        // 淡色對齊線連動：上方屏幕選中點 <-> 下方條紋選中點
+        var stripSelX = stripLeft + ((state.selectedYMm / Y_RANGE_MM + 1) * 0.5) * stripW;
+        ctx.strokeStyle = 'rgba(217, 56, 41, 0.45)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(screenX + 4, scrSelY);
+        ctx.lineTo(stripSelX, stripTop);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (state.step === 4) {
+          ctx.strokeStyle = '#D93829';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(stripSelX, stripTop);
+          ctx.lineTo(stripSelX, stripTop + stripH);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // === 第三層（第 5 步起）：強度分布曲線（與條紋同 x 軸對齊） ===
+        if (state.step >= 5) {
+          var curveTop = h * 0.77;
+          var curveBot = h * 0.95;
+          var curveH = curveBot - curveTop;
+
+          ctx.save();
+          ctx.strokeStyle = '#D1CBC0';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(stripLeft, curveBot);
+          ctx.lineTo(stripRight, curveBot);
+          ctx.stroke();
+
+          // 虛線：繞射包絡 sinc^2
+          ctx.strokeStyle = '#6B7280';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          for (var ex = 0; ex <= stripW; ex += 2) {
+            var eYMm = ((ex / stripW) * 2 - 1) * Y_RANGE_MM;
+            var eVal = P.computeIntensityAtY({
+              yMm: eYMm, lambdaNm: state.lambdaNm, dMm: state.dMm, aMm: state.aMm, lMeters: state.lMeters, slitCount: state.slitCount
+            }).envelope;
+            var cy = curveBot - eVal * (curveH - 6);
+            if (ex === 0) ctx.moveTo(stripLeft + ex, cy);
+            else ctx.lineTo(stripLeft + ex, cy);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 實線：實際強度
+          ctx.strokeStyle = 'rgb(' + specRgb + ')';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (var ix = 0; ix <= stripW; ix += 2) {
+            var iYMm = ((ix / stripW) * 2 - 1) * Y_RANGE_MM;
+            var iVal = P.computeIntensityAtY({
+              yMm: iYMm, lambdaNm: state.lambdaNm, dMm: state.dMm, aMm: state.aMm, lMeters: state.lMeters, slitCount: state.slitCount
+            }).total;
+            var icy = curveBot - iVal * (curveH - 6);
+            if (ix === 0) ctx.moveTo(stripLeft + ix, icy);
+            else ctx.lineTo(stripLeft + ix, icy);
+          }
+          ctx.stroke();
+
+          ctx.fillStyle = '#5C5C62';
+          ctx.font = '600 11px ' + fontFam;
+          ctx.textAlign = 'left';
+          ctx.fillText('強度分布（實線：實際強度｜虛線：繞射包絡）', stripLeft, curveTop - 4);
+          ctx.restore();
+        }
+      }
+
+      // 兩圓右側交點近似輔助函式（使波前交點對齊）
+      function intersectCirclesRight(x1, y1, r1, x2, y2, r2) {
+        var dy = y2 - y1;
+        var d = Math.abs(dy);
+        if (d > r1 + r2 || d < Math.abs(r1 - r2) || d === 0) return null;
+        var a = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
+        var hSq = r1 * r1 - a * a;
+        if (hSq < 0) return null;
+        var y = y1 + (dy > 0 ? a : -a);
+        var x = x1 + Math.sqrt(hSq);
+        return { x: x, y: y };
+      }
+
+      var lastTime = performance.now();
+      function loop(now) {
+        var rawDt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        if (state.isPlaying) {
+          state.wavePhase = (state.wavePhase + rawDt * 2.2 * state.speedMultiplier) % 1000;
+        }
+        var rect = canvasWrap.getBoundingClientRect();
+        drawScene(rect.width, rect.height);
+        requestAnimationFrame(loop);
+      }
+
+      resizeCanvas();
+      renderAll();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
