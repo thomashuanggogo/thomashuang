@@ -1522,18 +1522,51 @@
         ctx.textAlign = 'left';
         ctx.fillText('屏幕實景條紋（±' + Y_RANGE_MM + ' mm）', stripLeft, stripTop - 7);
 
-        // Δy 雙箭頭標記畫在條紋圖上（中央亮紋到第 1 亮紋）
+        // Δy 雙箭頭標記畫在條紋圖上（中央亮紋到第 1 亮紋），加深色描邊與高對比底襯
         if (state.slitCount === 2) {
           var dyMm = P.computeFringeSpacingMm(state.lambdaNm, state.dMm, state.lMeters);
           var xCenter = stripLeft + stripW * 0.5;
           var xFirst = stripLeft + ((dyMm / Y_RANGE_MM + 1) * 0.5) * stripW;
           if (xFirst - xCenter > 14 && xFirst < stripRight - 10) {
-            var dyY = stripTop + stripH * 0.5;
+            var dyY = stripTop + stripH * 0.62;
+            var midDyX = (xCenter + xFirst) / 2;
+
+            // 先畫深色外框描邊，再畫白色雙箭頭，確保起訖點與亮紋對比清晰
+            ctx.save();
+            ctx.strokeStyle = 'rgba(17, 18, 21, 0.88)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(xCenter, dyY - 7); ctx.lineTo(xCenter, dyY + 7);
+            ctx.moveTo(xFirst, dyY - 7); ctx.lineTo(xFirst, dyY + 7);
+            ctx.moveTo(xCenter, dyY); ctx.lineTo(xFirst, dyY);
+            ctx.stroke();
+            ctx.restore();
+
             drawDoubleArrow(xCenter, dyY, xFirst, dyY, '#FFFFFF');
+
+            // 深色半透明圓角小牌底襯 (75%+ 不透明)
+            var labelText = 'Δy = ' + dyMm.toFixed(2) + ' mm';
+            ctx.save();
+            ctx.font = '700 12px ' + monoFam;
+            var tw = ctx.measureText(labelText).width;
+            var pillW = tw + 14;
+            var pillH = 22;
+            var pillX = midDyX - pillW / 2;
+            var pillY = dyY - pillH - 9;
+
+            ctx.fillStyle = 'rgba(24, 24, 27, 0.84)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 6);
+            ctx.fill();
+            ctx.stroke();
+
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = '700 11px ' + monoFam;
             ctx.textAlign = 'center';
-            ctx.fillText('Δy=' + dyMm.toFixed(2) + 'mm', (xCenter + xFirst) / 2, dyY - 10);
+            ctx.textBaseline = 'middle';
+            ctx.fillText(labelText, midDyX, pillY + pillH / 2 + 0.5);
+            ctx.restore();
           }
         }
 
