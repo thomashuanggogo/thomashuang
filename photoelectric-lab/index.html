@@ -1,0 +1,2393 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>光電效應互動模擬</title>
+  <style>
+    :root {
+      --bg: #F7F5F0;
+      --card: #FFFFFF;
+      --card-subtle: #F2EFE9;
+      --border: #E2DDD3;
+      --text: #1D1D1F;
+      --text-muted: #5C5C62;
+      --kw-red: #D93829;
+      --kw-red-bg: #FDF1F0;
+      --electron-blue: #1D4ED8;
+      --electron-blue-bg: #EFF6FF;
+      --success-green: #15803D;
+      --success-bg: #F0FDF4;
+      --accent-dark: #1D1D1F;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 頂部列：步驟縮小置頂 + 一句話引導區 */
+    .top-bar {
+      flex: 0 0 auto;
+      height: 54px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .step-strip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .step-pill {
+      min-width: 34px;
+      height: 44px;
+      padding: 0 8px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .step-pill:hover:not(:disabled) {
+      background: var(--card-subtle);
+      color: var(--text);
+    }
+
+    .step-pill.active {
+      background: var(--accent-dark);
+      color: #FFFFFF;
+    }
+
+    .step-pill.done:not(.active) {
+      background: var(--card-subtle);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .step-pill:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .guide-banner {
+      flex: 1;
+      text-align: right;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .guide-banner .kw {
+      color: var(--kw-red);
+    }
+
+    /* 主體兩欄：現象區(60%+) 與 控制教學區 */
+    .main-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(370px, 1fr);
+      gap: 14px;
+      padding: 12px 16px;
+    }
+
+    /* 左側：現象區 */
+    .phenomenon-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      gap: 8px;
+    }
+
+    .phenomenon-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+    }
+
+    .readout-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .readout-chip {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .readout-chip .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .readout-chip .val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .readout-chip.highlight-blue .val {
+      color: var(--electron-blue);
+    }
+
+    .readout-chip.highlight-red .val {
+      color: var(--kw-red);
+    }
+
+    .speed-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .speed-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 8px;
+      font-weight: 600;
+    }
+
+    .speed-btn {
+      min-width: 48px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .speed-btn.active {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #F7F4EE 0%, #FFFFFF 100%);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .phenomenon-footer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 2px 2px 0;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* 右側：教學卡片與控制區 */
+    .control-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      gap: 10px;
+    }
+
+    .step-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .step-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--card-subtle);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .step-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .story-card {
+      background: var(--card-subtle);
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .story-card p + p {
+      margin-top: 5px;
+    }
+
+    .kw {
+      color: var(--kw-red);
+      font-weight: 700;
+    }
+
+    .symbol-note {
+      background: #FFFDF8;
+      border-left: 3px solid var(--kw-red);
+      padding: 7px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      border-radius: 0 8px 8px 0;
+      color: var(--text);
+    }
+
+    .controls-box {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .control-val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 44px;
+      accent-color: var(--accent-dark);
+      cursor: pointer;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .choice-btn, .metal-btn, .action-btn, .tab-btn {
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .metal-btn, .action-btn, .tab-btn {
+      text-align: center;
+    }
+
+    .choice-btn:hover, .metal-btn:hover, .action-btn:hover:not(:disabled), .tab-btn:hover {
+      border-color: var(--accent-dark);
+      background: var(--card-subtle);
+    }
+
+    .choice-btn.selected, .metal-btn.selected, .tab-btn.selected {
+      background: var(--accent-dark);
+      color: #FFFFFF;
+      border-color: var(--accent-dark);
+    }
+
+    .action-btn.primary {
+      background: var(--accent-dark);
+      color: #FFFFFF;
+      border-color: var(--accent-dark);
+    }
+
+    .action-btn.primary:hover:not(:disabled) {
+      background: #333336;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .compare-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      background: #FCFBF8;
+    }
+
+    .compare-box .box-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+
+    .formula-box {
+      background: #FCFBF8;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .formula-main {
+      font-family: var(--font-mono);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .formula-term {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .formula-term:hover {
+      background: var(--card-subtle);
+    }
+
+    .formula-term.active {
+      color: var(--kw-red);
+      background: var(--kw-red-bg);
+      border-color: #F5C2BD;
+    }
+
+    .formula-line.active {
+      color: var(--kw-red);
+      font-weight: 600;
+    }
+
+    .formula-line.active .formula-sym {
+      color: var(--kw-red);
+    }
+
+    .formula-line {
+      font-size: 13px;
+      line-height: 1.4;
+      display: flex;
+      gap: 8px;
+    }
+
+    .formula-sym {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      min-width: 46px;
+      color: var(--text);
+    }
+
+    .voltage-adjust-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-adj-btn {
+      min-width: 64px;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-subtle);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .mini-adj-btn:hover {
+      border-color: var(--accent-dark);
+    }
+
+    .millikan-status {
+      font-size: 12px;
+      background: var(--card-subtle);
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+    }
+
+    .millikan-result {
+      border: 1px solid var(--success-green);
+      background: var(--success-bg);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .myth-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      background: #FCFBF8;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .myth-block-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--kw-red);
+      margin-bottom: 2px;
+    }
+
+    .myth-block-text {
+      font-size: 13.5px;
+      line-height: 1.45;
+    }
+
+    .memory-card {
+      background: var(--kw-red-bg);
+      border: 1px solid #F5C2BD;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--kw-red);
+      line-height: 1.45;
+    }
+
+    .feedback-box {
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: var(--card-subtle);
+    }
+
+    .feedback-box.ok {
+      background: var(--success-bg);
+      border-color: #BBF7D0;
+      color: #14532D;
+    }
+
+    .feedback-box.warn {
+      background: var(--kw-red-bg);
+      border-color: #FECACA;
+      color: #7F1D1D;
+    }
+
+    /* 右側底部導覽列 */
+    .nav-footer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .nav-btn {
+      min-width: 110px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 16px;
+    }
+
+    .nav-btn.next {
+      flex: 1;
+      background: var(--accent-dark);
+      color: #FFFFFF;
+      border-color: var(--accent-dark);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* 1280x720 緊湊微調 */
+    @media (max-height: 750px) {
+      .top-bar { height: 48px; }
+      .main-grid { padding: 8px 14px; gap: 10px; }
+      .control-pane { padding: 10px 14px; gap: 7px; }
+      .story-card { padding: 8px 11px; font-size: 13px; line-height: 1.45; }
+      .step-title { font-size: 16px; }
+      input[type="range"] { height: 44px; }
+      .formula-main { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 頂部：縮小步驟條 + 任務引導句 -->
+    <header class="top-bar">
+      <nav class="step-strip" id="stepStrip" aria-label="學習步驟"></nav>
+      <div class="guide-banner" id="guideBanner"></div>
+    </header>
+
+    <!-- 主體兩欄 -->
+    <main class="main-grid">
+      <!-- 左側：現象區 -->
+      <section class="phenomenon-pane">
+        <div class="phenomenon-header">
+          <div class="readout-strip" id="readoutStrip"></div>
+          <div class="speed-group" role="group" aria-label="慢動作倍率">
+            <span class="speed-label">慢動作</span>
+            <button type="button" class="speed-btn active" data-speed="1">1x</button>
+            <button type="button" class="speed-btn" data-speed="0.5">0.5x</button>
+            <button type="button" class="speed-btn" data-speed="0.25">0.25x</button>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="simCanvas"></canvas>
+        </div>
+        <div class="phenomenon-footer">
+          <div class="legend-row" id="legendRow">
+            <span class="legend-item"><span class="dot" style="background:#D93829;"></span>光子能量包</span>
+            <span class="legend-item"><span class="dot" style="background:#1D4ED8;"></span>飛出電子</span>
+            <span class="legend-item">左：發射極（陰極） / 右：收集極（陽極）</span>
+          </div>
+          <span id="statusSummary"></span>
+        </div>
+      </section>
+
+      <!-- 右側：控制與教學卡片區 -->
+      <aside class="control-pane">
+        <div class="step-header">
+          <h1 class="step-title" id="stepTitle"></h1>
+          <span class="step-badge" id="stepBadge"></span>
+        </div>
+        <div class="step-body" id="stepBody"></div>
+        <div class="nav-footer">
+          <button type="button" class="nav-btn prev" id="prevBtn">上一步</button>
+          <button type="button" class="nav-btn next" id="nextBtn">下一步</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    /**
+ * 光電效應純物理計算模組（無 DOM 相依）
+ * 提供常數定義、金屬功函數表、光電效應狀態計算與密立坎圖線性回歸擬合。
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.PhotoelectricPhysics = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  /** 物理常數（依據工單規格） */
+  var CONSTANTS = {
+    H_PLANCK: 6.626e-34,        // 普朗克常數 (J·s)
+    E_CHARGE: 1.602176634e-19,  // 基本電荷 (C)
+    HC_EV_NM: 1240,             // hc 常用簡化值 (eV·nm)
+    C_LIGHT: 2.99792458e8,      // 真空光速 (m/s)
+    MIN_WAVELENGTH_NM: 100,
+    MAX_WAVELENGTH_NM: 800,
+    MAX_CURRENT_UA: 120         // 100% 光強且無反向電壓時的基準最大光電流 (μA)
+  };
+
+  /** 課本常用金屬與功函數列表 */
+  var METALS = [
+    { id: 'Cs', symbol: 'Cs', nameZh: '銫', phiEv: 2.10 },
+    { id: 'Na', symbol: 'Na', nameZh: '鈉', phiEv: 2.28 },
+    { id: 'K',  symbol: 'K',  nameZh: '鉀', phiEv: 2.30 },
+    { id: 'Zn', symbol: 'Zn', nameZh: '鋅', phiEv: 4.30 },
+    { id: 'Cu', symbol: 'Cu', nameZh: '銅', phiEv: 4.70 },
+    { id: 'Pt', symbol: 'Pt', nameZh: '鉑', phiEv: 5.65 }
+  ];
+
+  function getMetalById(metalId) {
+    for (var i = 0; i < METALS.length; i++) {
+      if (METALS[i].id === metalId) {
+        return METALS[i];
+      }
+    }
+    return METALS[0];
+  }
+
+  /**
+   * 波長 (nm) 轉頻率 (Hz)
+   */
+  function wavelengthToFrequencyHz(wavelengthNm) {
+    if (!(wavelengthNm > 0)) {
+      throw new Error('波長必須大於 0 nm');
+    }
+    return CONSTANTS.C_LIGHT / (wavelengthNm * 1e-9);
+  }
+
+  /**
+   * 波長 (nm) 轉光子能量 (eV)，使用 hc = 1240 eV·nm
+   */
+  function photonEnergyEv(wavelengthNm) {
+    if (!(wavelengthNm > 0)) {
+      throw new Error('波長必須大於 0 nm');
+    }
+    return CONSTANTS.HC_EV_NM / wavelengthNm;
+  }
+
+  /**
+   * 功函數 (eV) 轉截止波長 (nm)
+   */
+  function cutoffWavelengthNm(phiEv) {
+    if (!(phiEv > 0)) {
+      throw new Error('功函數必須大於 0 eV');
+    }
+    return CONSTANTS.HC_EV_NM / phiEv;
+  }
+
+  /**
+   * 功函數 (eV) 轉截止頻率 (Hz)
+   */
+  function cutoffFrequencyHz(phiEv) {
+    return wavelengthToFrequencyHz(cutoffWavelengthNm(phiEv));
+  }
+
+  /**
+   * 計算特定參數下的完整光電效應物理狀態
+   * @param {Object} params
+   * @param {string} params.metalId - 金屬代號（Cs, Na, K, Zn, Cu, Pt）
+   * @param {number} params.wavelengthNm - 波長 (100–800 nm)
+   * @param {number} params.intensityPct - 相對光強 (0–100 %)
+   * @param {number} params.retardingVoltageV - 外加反向遏止電壓 (>= 0 V，若傳入負值代表順向加速)
+   */
+  function computePhotoelectricState(params) {
+    var metal = getMetalById(params.metalId || 'Cs');
+    var wavelengthNm = Number(params.wavelengthNm);
+    var intensityPct = Math.max(0, Math.min(100, Number(params.intensityPct != null ? params.intensityPct : 50)));
+    var retardingVoltageV = Number(params.retardingVoltageV != null ? params.retardingVoltageV : 0);
+
+    var freqHz = wavelengthToFrequencyHz(wavelengthNm);
+    var ePhotonEv = photonEnergyEv(wavelengthNm);
+    var lambda0Nm = cutoffWavelengthNm(metal.phiEv);
+    var f0Hz = cutoffFrequencyHz(metal.phiEv);
+
+    var rawKMax = ePhotonEv - metal.phiEv;
+    var canEmit = rawKMax > 1e-9;
+    var kMaxEv = canEmit ? rawKMax : 0;
+    var stoppingVoltageV = kMaxEv; // eV_s = K_max，數值相等
+
+    var reachFraction = 0;
+    if (canEmit && intensityPct > 0) {
+      if (retardingVoltageV <= 0) {
+        reachFraction = 1;
+      } else if (retardingVoltageV < stoppingVoltageV - 1e-9) {
+        reachFraction = 1 - (retardingVoltageV / stoppingVoltageV);
+      } else {
+        reachFraction = 0;
+      }
+    }
+
+    var currentUa = CONSTANTS.MAX_CURRENT_UA * (intensityPct / 100) * reachFraction;
+
+    return {
+      metal: metal,
+      wavelengthNm: wavelengthNm,
+      intensityPct: intensityPct,
+      retardingVoltageV: retardingVoltageV,
+      frequencyHz: freqHz,
+      frequency1e14Hz: freqHz / 1e14,
+      photonEnergyEv: ePhotonEv,
+      cutoffWavelengthNm: lambda0Nm,
+      cutoffFrequencyHz: f0Hz,
+      cutoffFrequency1e14Hz: f0Hz / 1e14,
+      canEmit: canEmit,
+      kMaxEv: kMaxEv,
+      stoppingVoltageV: stoppingVoltageV,
+      reachFraction: reachFraction,
+      currentUa: currentUa
+    };
+  }
+
+  /**
+   * 密立坎圖線性回歸擬合：V_s = (h/e) * f - (phi/e)
+   * @param {Array<{frequencyHz: number, stoppingVoltageV: number}>} points
+   */
+  function fitMillikanData(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+      throw new Error('密立坎圖擬合至少需要 2 組資料點');
+    }
+
+    var n = points.length;
+    var sumF = 0;
+    var sumV = 0;
+    for (var i = 0; i < n; i++) {
+      sumF += points[i].frequencyHz;
+      sumV += points[i].stoppingVoltageV;
+    }
+    var meanF = sumF / n;
+    var meanV = sumV / n;
+
+    var ssFF = 0;
+    var ssFV = 0;
+    var ssVV = 0;
+    for (var j = 0; j < n; j++) {
+      var df = points[j].frequencyHz - meanF;
+      var dv = points[j].stoppingVoltageV - meanV;
+      ssFF += df * df;
+      ssFV += df * dv;
+      ssVV += dv * dv;
+    }
+
+    if (ssFF === 0) {
+      throw new Error('所有資料點的頻率相同，無法擬合斜率');
+    }
+
+    var slope = ssFV / ssFF; // V·s = J·s / C
+    var intercept = meanV - slope * meanF; // V
+    var hMeasured = slope * CONSTANTS.E_CHARGE;
+    var errorPct = Math.abs(hMeasured - CONSTANTS.H_PLANCK) / CONSTANTS.H_PLANCK * 100;
+    var phiEstimatedEv = -intercept;
+
+    var rSquared = 1;
+    if (ssVV > 0) {
+      var ssRes = 0;
+      for (var k = 0; k < n; k++) {
+        var predicted = slope * points[k].frequencyHz + intercept;
+        var diff = points[k].stoppingVoltageV - predicted;
+        ssRes += diff * diff;
+      }
+      rSquared = 1 - (ssRes / ssVV);
+    }
+
+    return {
+      count: n,
+      slope: slope,
+      intercept: intercept,
+      hMeasured: hMeasured,
+      hAccepted: CONSTANTS.H_PLANCK,
+      errorPct: errorPct,
+      phiEstimatedEv: phiEstimatedEv,
+      rSquared: rSquared
+    };
+  }
+
+  /**
+   * 依據波長 (nm) 回傳對應光色資訊與米白底適用的高對比顏色
+   */
+  function wavelengthToVisual(wavelengthNm) {
+    var band = '可見光';
+    var colorHex = '#4f46e5';
+
+    if (wavelengthNm < 380) {
+      band = '紫外光';
+      colorHex = '#6d28d9';
+    } else if (wavelengthNm < 450) {
+      band = '紫光';
+      colorHex = '#5b21b6';
+    } else if (wavelengthNm < 495) {
+      band = '藍光';
+      colorHex = '#1d4ed8';
+    } else if (wavelengthNm < 570) {
+      band = '綠光';
+      colorHex = '#15803d';
+    } else if (wavelengthNm < 590) {
+      band = '黃光';
+      colorHex = '#b45309';
+    } else if (wavelengthNm < 620) {
+      band = '橙光';
+      colorHex = '#c2410c';
+    } else if (wavelengthNm <= 750) {
+      band = '紅光';
+      colorHex = '#dc2626';
+    } else {
+      band = '紅外光';
+      colorHex = '#991b1b';
+    }
+
+    return {
+      band: band,
+      colorHex: colorHex
+    };
+  }
+
+  /**
+   * 依據波長 (nm) 計算可見光譜近似 RGB（Bruton 演算法）
+   */
+  function wavelengthToSpectrumRgb(wavelengthNm) {
+    var w = Number(wavelengthNm);
+    var r = 0, g = 0, b = 0, factor = 1;
+    var isUv = w < 380;
+    var isIr = w > 750;
+
+    if (isUv) {
+      return { r: 139, g: 92, b: 246, isUv: true, isIr: false };
+    }
+    if (isIr) {
+      return { r: 165, g: 28, b: 28, isUv: false, isIr: true };
+    }
+
+    if (w >= 380 && w < 440) {
+      r = -(w - 440) / (440 - 380);
+      g = 0;
+      b = 1;
+    } else if (w >= 440 && w < 490) {
+      r = 0;
+      g = (w - 440) / (490 - 440);
+      b = 1;
+    } else if (w >= 490 && w < 510) {
+      r = 0;
+      g = 1;
+      b = -(w - 510) / (510 - 490);
+    } else if (w >= 510 && w < 580) {
+      r = (w - 510) / (580 - 510);
+      g = 1;
+      b = 0;
+    } else if (w >= 580 && w < 645) {
+      r = 1;
+      g = -(w - 645) / (645 - 580);
+      b = 0;
+    } else if (w >= 645 && w <= 750) {
+      r = 1;
+      g = 0;
+      b = 0;
+    }
+
+    if (w >= 380 && w < 420) {
+      factor = 0.35 + 0.65 * (w - 380) / (420 - 380);
+    } else if (w >= 420 && w <= 700) {
+      factor = 1.0;
+    } else if (w > 700 && w <= 750) {
+      factor = 0.45 + 0.55 * (750 - w) / (750 - 700);
+    }
+
+    return {
+      r: Math.round(255 * Math.pow(r * factor, 0.85)),
+      g: Math.round(255 * Math.pow(g * factor, 0.85)),
+      b: Math.round(255 * Math.pow(b * factor, 0.85)),
+      isUv: false,
+      isIr: false
+    };
+  }
+
+  return {
+    CONSTANTS: CONSTANTS,
+    METALS: METALS,
+    getMetalById: getMetalById,
+    wavelengthToFrequencyHz: wavelengthToFrequencyHz,
+    photonEnergyEv: photonEnergyEv,
+    cutoffWavelengthNm: cutoffWavelengthNm,
+    cutoffFrequencyHz: cutoffFrequencyHz,
+    computePhotoelectricState: computePhotoelectricState,
+    fitMillikanData: fitMillikanData,
+    wavelengthToVisual: wavelengthToVisual,
+    wavelengthToSpectrumRgb: wavelengthToSpectrumRgb
+  };
+});
+
+  </script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var P = window.PhotoelectricPhysics;
+
+      // 應用程式狀態
+      var state = {
+        step: 1,
+        maxUnlockedStep: 1,
+        prediction: null, // 'brightness' | 'color'
+        metalId: 'Cs',
+        wavelengthNm: 700,
+        intensityPct: 60,
+        retardingVoltageV: 0,
+        speedMultiplier: 1,
+        isEmittingLight: false, // 第1步未選預測前先不照射
+        viewMode: 'tube', // 'tube' | 'millikan'
+        millikanPoints: [],
+        millikanFit: null,
+        formulaRevealCount: 0,
+        formulaFocusIdx: -1,
+        mythIndex: 0,
+        visitedMyths: [true, false, false],
+        transferChoice: null
+      };
+
+      // 10 步驟定義
+      var STEPS = [
+        { id: 1, title: '為什麼紅光照不出電子？', guide: '先選你的<span class="kw">預測</span>，再進實驗室驗證。' },
+        { id: 2, title: '沙盒一：只換光的顏色', guide: '固定金屬銫，滑動波長找出打出電子的<span class="kw">門檻</span>。' },
+        { id: 3, title: '沙盒二：把亮度拉到最大', guide: '紅光調最亮 vs 紫光調最暗，對照你的預測。' },
+        { id: 4, title: '微觀圖像：一包一包的能量', guide: '觀察<span class="kw">能量包</span>撞擊電子的過程，看誰能過關。' },
+        { id: 5, title: '換金屬：門檻跟著變', guide: '切換不同金屬，比較電子逃脫要付的<span class="kw">過路費</span>。' },
+        { id: 6, title: '遏止電壓：把電子推回去', guide: '調高反向電壓直到電流<span class="kw">剛好歸零</span>，讀出 V_s。' },
+        { id: 7, title: '公式出場：光電方程式', guide: '用剛才觀察到的現象，對照公式每一項的意義。' },
+        { id: 8, title: '密立坎圖挑戰：親手測出 h', guide: '量測至少 <span class="kw">4 組</span>不同頻率的 V_s，作圖算出 h。' },
+        { id: 9, title: '破解三大常見迷思', guide: '逐一點開三個迷思，記住背後的<span class="kw">生活比喻</span>。' },
+        { id: 10, title: '生活遷移題與總結', guide: '用學到的原理回答新情境，帶走核心記憶點。' }
+      ];
+
+      var MYTHS = [
+        {
+          myth: '「光越亮，打出的電子飛越快。」',
+          metaphor: '光亮代表同時衝進來的「人數」很多，但每個人的力氣（單顆光子能量）沒有變大；人多只會讓總電流變大，不會讓單顆電子跑更快。',
+          takeaway: '亮是人多，快是力氣大，這是兩回事。'
+        },
+        {
+          myth: '「紅光照久一點，電子累積能量就會出來。」',
+          metaphor: '能量包不能「集點換購」。電子一次只跟一包光子碰撞，一包不夠付過路費，撞了一百次還是出不來，多餘能量直接彈開或散掉。',
+          takeaway: '能量包不能集點，一包不夠就是不夠。'
+        },
+        {
+          myth: '「頻率越高，打出來的電流越大。」',
+          metaphor: '只要頻率跨過門檻，電流大小看的是「有多少顆光子進來」（光強）；頻率再高，只會讓單顆電子飛得更快，不會無中生有變出更多電子。',
+          takeaway: '電流大小看人數（亮度），頻率決定的是最高速度。'
+        }
+      ];
+
+      // DOM 參照
+      var stepStrip = document.getElementById('stepStrip');
+      var guideBanner = document.getElementById('guideBanner');
+      var readoutStrip = document.getElementById('readoutStrip');
+      var stepTitle = document.getElementById('stepTitle');
+      var stepBadge = document.getElementById('stepBadge');
+      var stepBody = document.getElementById('stepBody');
+      var prevBtn = document.getElementById('prevBtn');
+      var nextBtn = document.getElementById('nextBtn');
+      var statusSummary = document.getElementById('statusSummary');
+      var canvas = document.getElementById('simCanvas');
+      var canvasWrap = document.getElementById('canvasWrap');
+      var ctx = canvas.getContext('2d');
+
+      // 粒子系統與視覺回饋特效
+      var photons = [];
+      var electrons = [];
+      var ripples = [];
+      var anodeHits = [];
+      var ammeterJitter = 0;
+      var photonSpawnAccum = 0;
+
+      function resizeCanvas() {
+        var rect = canvasWrap.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resizeCanvas);
+
+      function getPhys() {
+        return P.computePhotoelectricState({
+          metalId: state.metalId,
+          wavelengthNm: state.wavelengthNm,
+          intensityPct: state.intensityPct,
+          retardingVoltageV: state.retardingVoltageV
+        });
+      }
+
+      function goToStep(targetStep) {
+        if (targetStep < 1 || targetStep > STEPS.length) return;
+        if (targetStep > state.maxUnlockedStep) return;
+
+        state.step = targetStep;
+        if (targetStep === 1) {
+          state.isEmittingLight = false;
+          photons = [];
+          electrons = [];
+          ripples = [];
+          anodeHits = [];
+        } else {
+          state.isEmittingLight = true;
+        }
+
+        // 各步驟預設參數設計（避免干擾，一次一變因）
+        if (targetStep === 2) {
+          state.metalId = 'Cs';
+          state.intensityPct = 60;
+          state.retardingVoltageV = 0;
+          state.viewMode = 'tube';
+        } else if (targetStep === 3) {
+          state.metalId = 'Cs';
+          state.retardingVoltageV = 0;
+          state.viewMode = 'tube';
+        } else if (targetStep === 4) {
+          state.metalId = 'Cs';
+          state.intensityPct = 50;
+          state.retardingVoltageV = 0;
+          state.viewMode = 'tube';
+        } else if (targetStep === 5) {
+          state.intensityPct = 60;
+          state.retardingVoltageV = 0;
+          state.viewMode = 'tube';
+        } else if (targetStep === 6) {
+          if (state.wavelengthNm > 500) state.wavelengthNm = 400;
+          state.metalId = 'Cs';
+          state.intensityPct = 70;
+          state.viewMode = 'tube';
+        } else if (targetStep === 7) {
+          state.viewMode = 'tube';
+        } else if (targetStep === 8) {
+          state.intensityPct = 70;
+          if (state.millikanFit) {
+            state.viewMode = 'millikan';
+          } else {
+            state.viewMode = 'tube';
+          }
+        } else {
+          state.viewMode = 'tube';
+        }
+
+        renderAll();
+      }
+
+      function unlockAndNext() {
+        if (state.step === 1 && !state.prediction) return;
+        if (state.step === 7 && state.formulaRevealCount < 4) return;
+        if (state.step < STEPS.length) {
+          if (state.step + 1 > state.maxUnlockedStep) {
+            state.maxUnlockedStep = state.step + 1;
+          }
+          goToStep(state.step + 1);
+        }
+      }
+
+      function renderStepStrip() {
+        stepStrip.innerHTML = '';
+        for (var i = 1; i <= STEPS.length; i++) {
+          (function (idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'step-pill';
+            if (idx === state.step) btn.className += ' active';
+            else if (idx <= state.maxUnlockedStep) btn.className += ' done';
+            btn.textContent = String(idx);
+            btn.disabled = idx > state.maxUnlockedStep;
+            btn.setAttribute('aria-label', '第 ' + idx + ' 步：' + STEPS[idx - 1].title);
+            btn.addEventListener('click', function () {
+              goToStep(idx);
+            });
+            stepStrip.appendChild(btn);
+          })(i);
+        }
+      }
+
+      function renderReadouts() {
+        var phys = getPhys();
+        var vis = P.wavelengthToVisual(phys.wavelengthNm);
+        var chips = [];
+
+        chips.push({
+          label: '波長 / 光色',
+          val: Math.round(phys.wavelengthNm) + ' nm (' + vis.band + ')',
+          cls: ''
+        });
+
+        if (state.step >= 5) {
+          chips.push({
+            label: '金屬 / 功函數',
+            val: phys.metal.symbol + ' (' + phys.metal.phiEv.toFixed(2) + ' eV)',
+            cls: ''
+          });
+        }
+
+        if (state.step >= 6) {
+          chips.push({
+            label: '反向電壓',
+            val: phys.retardingVoltageV.toFixed(2) + ' V',
+            cls: 'highlight-red'
+          });
+        }
+
+        if (state.step >= 2) {
+          chips.push({
+            label: '光電流',
+            val: state.isEmittingLight ? phys.currentUa.toFixed(1) + ' μA' : '待機',
+            cls: phys.currentUa > 0 ? 'highlight-blue' : ''
+          });
+        }
+
+        if (state.step >= 7) {
+          chips.push({
+            label: '最大動能 K_max',
+            val: phys.kMaxEv.toFixed(2) + ' eV',
+            cls: 'highlight-blue'
+          });
+        }
+
+        readoutStrip.innerHTML = chips.map(function (c) {
+          return '<div class="readout-chip ' + c.cls + '"><span class="label">' + c.label + '</span><span class="val">' + c.val + '</span></div>';
+        }).join('');
+
+        if (state.step >= 2) {
+          if (phys.canEmit) {
+            statusSummary.textContent = '光子能量 ' + phys.photonEnergyEv.toFixed(2) + ' eV > 門檻 ' + phys.metal.phiEv.toFixed(2) + ' eV（可打出電子）';
+          } else {
+            statusSummary.textContent = '光子能量 ' + phys.photonEnergyEv.toFixed(2) + ' eV < 門檻 ' + phys.metal.phiEv.toFixed(2) + ' eV（無法打出）';
+          }
+        } else {
+          statusSummary.textContent = '請先完成右側預測';
+        }
+      }
+
+      function makeWavelengthControl(phys, noteText) {
+        var vis = P.wavelengthToVisual(phys.wavelengthNm);
+        return (
+          '<div class="control-row">' +
+            '<div class="control-label-row">' +
+              '<span>波長 λ（' + vis.band + '）</span>' +
+              '<span class="control-val" id="wlVal" style="color:' + vis.colorHex + ';">' + Math.round(phys.wavelengthNm) + ' nm（f = ' + phys.frequency1e14Hz.toFixed(2) + ' ×10^14 Hz）</span>' +
+            '</div>' +
+            '<input type="range" id="wlSlider" min="100" max="800" step="5" value="' + phys.wavelengthNm + '">' +
+            (noteText ? '<div style="font-size:12px;color:var(--text-muted);">' + noteText + '</div>' : '') +
+          '</div>'
+        );
+      }
+
+      function makeIntensityControl(phys) {
+        return (
+          '<div class="control-row">' +
+            '<div class="control-label-row">' +
+              '<span>光強度（亮度）</span>' +
+              '<span class="control-val" id="intVal">' + Math.round(phys.intensityPct) + ' %</span>' +
+            '</div>' +
+            '<input type="range" id="intSlider" min="0" max="100" step="5" value="' + phys.intensityPct + '">' +
+          '</div>'
+        );
+      }
+
+      function makeMetalControl(phys) {
+        var btns = P.METALS.map(function (m) {
+          var sel = m.id === phys.metal.id ? ' selected' : '';
+          return '<button type="button" class="metal-btn' + sel + '" data-metal="' + m.id + '">' + m.symbol + ' ' + m.nameZh + ' (' + m.phiEv.toFixed(2) + ' eV)</button>';
+        }).join('');
+        return (
+          '<div class="control-row">' +
+            '<div class="control-label-row"><span>選擇金屬極板</span><span class="control-val">截止波長 ' + phys.cutoffWavelengthNm.toFixed(0) + ' nm</span></div>' +
+            '<div class="btn-grid">' + btns + '</div>' +
+          '</div>'
+        );
+      }
+
+      function makeVoltageControl(phys) {
+        return (
+          '<div class="control-row">' +
+            '<div class="control-label-row">' +
+              '<span>反向遏止電壓</span>' +
+              '<span class="control-val" style="color:var(--kw-red);">' + phys.retardingVoltageV.toFixed(2) + ' V</span>' +
+            '</div>' +
+            '<div class="voltage-adjust-row">' +
+              '<button type="button" class="mini-adj-btn" id="vDownBtn">-0.01V</button>' +
+              '<input type="range" id="vSlider" min="0" max="6" step="0.01" value="' + phys.retardingVoltageV.toFixed(2) + '">' +
+              '<button type="button" class="mini-adj-btn" id="vUpBtn">+0.01V</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      function renderStepBody() {
+        var s = STEPS[state.step - 1];
+        var phys = getPhys();
+        guideBanner.innerHTML = s.guide;
+        stepTitle.textContent = s.title;
+        stepBadge.textContent = '步驟 ' + state.step + ' / ' + STEPS.length;
+
+        var html = '';
+
+        if (state.step === 1) {
+          html += '<div class="story-card">' +
+            '<p>用很亮的<span class="kw">紅光</span>照金屬一整天，一顆電子都打不出來。</p>' +
+            '<p>換成很弱的<span class="kw">紫光</span>，一照立刻有電子飛出來。</p>' +
+            '<p>你認為決定「能不能打出電子」的關鍵是什麼？</p>' +
+          '</div>';
+          html += '<div class="controls-box">' +
+            '<button type="button" class="choice-btn' + (state.prediction === 'brightness' ? ' selected' : '') + '" data-pred="brightness">亮度派：只要光夠亮（能量總和夠多），紅光也應該打得出電子。</button>' +
+            '<button type="button" class="choice-btn' + (state.prediction === 'color' ? ' selected' : '') + '" data-pred="color">顏色派：光的顏色（頻率）才決定能不能打出電子，跟亮度無關。</button>' +
+          '</div>';
+          if (state.prediction) {
+            html += '<div class="feedback-box ok">已記下你的預測！請按下方「下一步」進入實驗室親手驗證。</div>';
+          } else {
+            html += '<div class="feedback-box">請先點選一個預測，才會解鎖實驗室。</div>';
+          }
+        } else if (state.step === 2) {
+          html += '<div class="story-card">' +
+            '<p>現在金屬固定為「銫（Cs）」，先別管亮度。</p>' +
+            '<p>請把波長從紅光往紫光慢慢拉，找出開始有電子飛出的<span class="kw">門檻</span>。</p>' +
+          '</div>';
+          html += '<div class="symbol-note">符號初次見面：<strong>λ</strong>（念作「藍打」），白話就是「光的波長」，數字越小代表越偏紫光。</div>';
+          html += '<div class="controls-box">' + makeWavelengthControl(phys, '試著從 700 nm 往 500 nm 移動，觀察約 590 nm 處的變化。') + '</div>';
+          if (phys.canEmit) {
+            html += '<div class="feedback-box ok">成功跨過門檻！波長小於 ' + phys.cutoffWavelengthNm.toFixed(0) + ' nm 時，電子立刻飛出。</div>';
+          } else {
+            html += '<div class="feedback-box">目前波長還太長，電子一顆都打不出來。試著把滑桿往左拉！</div>';
+          }
+        } else if (state.step === 3) {
+          var predText = state.prediction === 'brightness' ? '你預測「亮度派」：光夠亮就打得出電子。' : '你預測「顏色派」：光的顏色才決定能不能打出電子。';
+          html += '<div class="story-card">' +
+            '<p>先按「紅光最亮」測試：把亮度拉到 100%，看看有沒有電子？</p>' +
+            '<p>再按「紫光最暗」測試：亮度降到 10%，看看發生什麼事。</p>' +
+          '</div>';
+          html += '<div class="btn-grid-2">' +
+            '<button type="button" class="action-btn" id="presetRedBright">紅光 (700 nm) + 最亮 100%</button>' +
+            '<button type="button" class="action-btn" id="presetVioletDim">紫光 (400 nm) + 最暗 10%</button>' +
+          '</div>';
+          html += '<div class="controls-box">' + makeWavelengthControl(phys) + makeIntensityControl(phys) + '</div>';
+          html += '<div class="compare-grid">' +
+            '<div class="compare-box"><div class="box-title">我的預測</div>' + predText + '</div>' +
+            '<div class="compare-box"><div class="box-title">實際結果</div>紅光再亮都是 <span class="kw">0 顆</span>；紫光再暗都立刻有電子，亮度只改變電子數量（電流）。</div>' +
+          '</div>';
+        } else if (state.step === 4) {
+          html += '<div class="story-card">' +
+            '<p>為什麼會這樣？因為光不是連續的水流，而是一包一包的<span class="kw">能量包</span>（光子）。</p>' +
+            '<p>紅光的能量包太小，撞到電子只會彈開；紫光的能量包夠大，一撞就把電子敲出來。</p>' +
+            '<p>多出來的能量，就變成電子飛出去的<span class="kw">速度</span>。</p>' +
+          '</div>';
+          html += '<div class="btn-grid-2">' +
+            '<button type="button" class="action-btn" id="microRedBtn">看紅光能量包 (700 nm)</button>' +
+            '<button type="button" class="action-btn" id="microVioletBtn">看紫光能量包 (400 nm)</button>' +
+          '</div>';
+          html += '<div class="controls-box">' + makeWavelengthControl(phys, '提示：可用左上角「0.25x 慢動作」看清楚一包撞一顆的瞬間。') + '</div>';
+        } else if (state.step === 5) {
+          html += '<div class="story-card">' +
+            '<p>換不同的金屬極板，你會發現打出電子的門檻跟著改變了。</p>' +
+            '<p>因為每種金屬抓緊電子的力氣不同，逃出去要付的<span class="kw">過路費</span>也不同。</p>' +
+          '</div>';
+          html += '<div class="symbol-note">符號初次見面：<strong>φ</strong>（念作「發」），白話是「功函數」，把電子綁在金屬上的力氣，單位 eV，就是電子逃出去要付的過路費。</div>';
+          html += '<div class="controls-box">' + makeMetalControl(phys) + makeWavelengthControl(phys) + '</div>';
+        } else if (state.step === 6) {
+          html += '<div class="story-card">' +
+            '<p>怎麼知道飛出來的電子有多快？我們在對面加上<span class="kw">反向電壓</span>把電子往回推。</p>' +
+            '<p>慢慢調高電壓，直到連最快的那顆電子也被推回、電流<span class="kw">剛好歸零</span>。</p>' +
+          '</div>';
+          html += '<div class="symbol-note">符號初次見面：<strong>V_s</strong>（念作「V s」），白話是「截止電壓（遏止電壓）」，剛好讓電流歸零的那個反向電壓。</div>';
+          html += '<div class="controls-box">' + makeWavelengthControl(phys, '量完一個頻率後，試著換兩個波長再量一次 V_s。') + makeVoltageControl(phys) + '</div>';
+          if (phys.canEmit && phys.currentUa === 0) {
+            html += '<div class="feedback-box ok">電流已歸零！你已擋下所有電子（理論 V_s = ' + phys.stoppingVoltageV.toFixed(2) + ' V）。</div>';
+          } else if (phys.canEmit) {
+            html += '<div class="feedback-box">仍有部分電子衝到對面（電流 ' + phys.currentUa.toFixed(1) + ' μA），請繼續調高反向電壓。</div>';
+          }
+        } else if (state.step === 7) {
+          var terms = [
+            { sym: 'K_max', desc: '念作「K max」，逃出電子能帶走的最大動能（' + phys.kMaxEv.toFixed(2) + ' eV）' },
+            { sym: 'hf',    desc: '念作「h f」，單顆光子的能量，h 是普朗克常數、f 是頻率（' + phys.photonEnergyEv.toFixed(2) + ' eV）' },
+            { sym: 'φ',     desc: '念作「發」，功函數，電子逃脫要付的過路費（' + phys.metal.phiEv.toFixed(2) + ' eV）' },
+            { sym: 'V_s',   desc: '念作「V s」，遏止電壓，數值上等於最大動能（' + phys.stoppingVoltageV.toFixed(2) + ' V）' }
+          ];
+          var fi = state.formulaFocusIdx;
+          html += '<div class="story-card">' +
+            '<p>把前面玩過的現象寫成一句話：<span class="kw">電子帶走的能量 ＝ 光子給的 − 過路費</span>。</p>' +
+          '</div>';
+          html += '<div class="formula-box">' +
+            '<div class="formula-main">' +
+              '<button type="button" class="formula-term' + (fi === 0 ? ' active' : '') + '" data-term="0">K_max</button>' +
+              '<span>=</span>' +
+              '<button type="button" class="formula-term' + (fi === 1 ? ' active' : '') + '" data-term="1">hf</button>' +
+              '<span>−</span>' +
+              '<button type="button" class="formula-term' + (fi === 2 ? ' active' : '') + '" data-term="2">φ</button>' +
+              '<span>（且 e<button type="button" class="formula-term' + (fi === 3 ? ' active' : '') + '" data-term="3">V_s</button>= K_max）</span>' +
+            '</div>';
+          for (var ti = 0; ti < state.formulaRevealCount && ti < terms.length; ti++) {
+            html += '<div class="formula-line' + (fi === ti ? ' active' : '') + '"><span class="formula-sym">' + terms[ti].sym + '</span><span>' + terms[ti].desc + '</span></div>';
+          }
+          html += '</div>';
+          if (state.formulaRevealCount < 4) {
+            html += '<button type="button" class="action-btn primary" id="formulaNextBtn">下一步說明（' + state.formulaRevealCount + ' / 4）</button>';
+          } else {
+            html += '<div class="controls-box">' + makeMetalControl(phys) + makeWavelengthControl(phys) + '</div>';
+          }
+        } else if (state.step === 8) {
+          html += '<div class="story-card">' +
+            '<p>任務：調波長並找出電流<span class="kw">剛好歸零</span>的反向電壓，按「記錄此點」。</p>' +
+            '<p>收集至少 <span class="kw">4 個</span>不同頻率的點後，按「作圖」算出普朗克常數 h。</p>' +
+          '</div>';
+          html += '<div class="controls-box">' + makeWavelengthControl(phys) + makeVoltageControl(phys) + '</div>';
+          html += '<div class="btn-grid">' +
+            '<button type="button" class="action-btn primary" id="recordPointBtn">記錄此點 (' + state.millikanPoints.length + ')</button>' +
+            '<button type="button" class="action-btn" id="plotMillikanBtn"' + (state.millikanPoints.length < 4 ? ' disabled' : '') + '>' + (state.viewMode === 'millikan' ? '回實驗管' : '作圖擬合') + '</button>' +
+            '<button type="button" class="action-btn" id="resetMillikanBtn">重設資料</button>' +
+          '</div>';
+          var statusLeft = state.millikanMsg ? state.millikanMsg : ('已記錄：' + state.millikanPoints.length + ' / 4 點以上');
+          html += '<div class="millikan-status"><span>' + statusLeft + '</span><span>目前電流：' + phys.currentUa.toFixed(1) + ' μA</span></div>';
+          if (state.millikanFit) {
+            var pass = state.millikanFit.errorPct < 2;
+            html += '<div class="millikan-result">' +
+              '<strong>擬合斜率換算 h = ' + state.millikanFit.hMeasured.toExponential(3) + ' J·s</strong><br>' +
+              '與公認值 (6.626×10^-34) 誤差：<span class="kw">' + state.millikanFit.errorPct.toFixed(2) + '%</span>（' + (pass ? '小於 2%，挑戰成功！' : '誤差偏大，建議重測並精準抓剛好歸零的電壓') + '）' +
+            '</div>';
+          }
+        } else if (state.step === 9) {
+          var m = MYTHS[state.mythIndex];
+          html += '<div class="story-card"><p>這三個是考場與生活最常搞混的<span class="kw">迷思</span>，請逐一點開看懂比喻：</p></div>';
+          html += '<div class="btn-grid">' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 0 ? ' selected' : '') + '" data-myth="0">迷思 1</button>' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 1 ? ' selected' : '') + '" data-myth="1">迷思 2</button>' +
+            '<button type="button" class="tab-btn' + (state.mythIndex === 2 ? ' selected' : '') + '" data-myth="2">迷思 3</button>' +
+          '</div>';
+          html += '<div class="myth-card">' +
+            '<div><div class="myth-block-label">迷思原文</div><div class="myth-block-text">' + m.myth + '</div></div>' +
+            '<div><div class="myth-block-label">生活比喻解法</div><div class="myth-block-text">' + m.metaphor + '</div></div>' +
+            '<div class="memory-card">記憶點：' + m.takeaway + '</div>' +
+          '</div>';
+        } else if (state.step === 10) {
+          html += '<div class="story-card">' +
+            '<p>情境題：驗鈔機靠<span class="kw">紫外燈</span>激發防偽螢光。為什麼不能換成一顆超亮的<span class="kw">紅燈泡</span>？</p>' +
+          '</div>';
+          html += '<div class="controls-box">' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'A' ? ' selected' : '') + '" data-ans="A">A. 紅光波長太長、單包能量太小，再亮也跨不過激發門檻。</button>' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'B' ? ' selected' : '') + '" data-ans="B">B. 紅光跑得比紫外光慢，來不及撞到鈔票。</button>' +
+            '<button type="button" class="choice-btn' + (state.transferChoice === 'C' ? ' selected' : '') + '" data-ans="C">C. 只要紅燈泡瓦數夠高、照久一點其實也可以。</button>' +
+          '</div>';
+          if (state.transferChoice === 'A') {
+            html += '<div class="feedback-box ok">完全正確！單顆紅光能量包不夠大，數量再多也無法觸發躍遷。</div>';
+          } else if (state.transferChoice) {
+            html += '<div class="feedback-box warn">再想一下：所有光在空氣中光速相同，而且能量包不能集點累積喔。</div>';
+          }
+          html += '<div class="memory-card">記住：能不能打出電子，看一包夠不夠大，不看來了多少包。</div>';
+        }
+
+        stepBody.innerHTML = html;
+        bindStepEvents();
+      }
+
+      function bindStepEvents() {
+        // 第1步預測
+        var predBtns = stepBody.querySelectorAll('[data-pred]');
+        predBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.prediction = btn.getAttribute('data-pred');
+            renderAll();
+          });
+        });
+
+        // 波長滑桿
+        var wlSlider = document.getElementById('wlSlider');
+        if (wlSlider) {
+          wlSlider.addEventListener('input', function () {
+            state.wavelengthNm = Number(wlSlider.value);
+            renderReadouts();
+            // 局部更新不重建滑桿避免拖曳中斷
+            var phys = getPhys();
+            var vis = P.wavelengthToVisual(phys.wavelengthNm);
+            var wlVal = document.getElementById('wlVal');
+            if (wlVal) {
+              wlVal.textContent = Math.round(phys.wavelengthNm) + ' nm（f = ' + phys.frequency1e14Hz.toFixed(2) + ' ×10^14 Hz）';
+              wlVal.style.color = vis.colorHex;
+            }
+          });
+          wlSlider.addEventListener('change', renderAll);
+        }
+
+        // 光強滑桿
+        var intSlider = document.getElementById('intSlider');
+        if (intSlider) {
+          intSlider.addEventListener('input', function () {
+            state.intensityPct = Number(intSlider.value);
+            renderReadouts();
+            var intVal = document.getElementById('intVal');
+            if (intVal) intVal.textContent = Math.round(state.intensityPct) + ' %';
+          });
+          intSlider.addEventListener('change', renderAll);
+        }
+
+        // 第3步快速預設
+        var presetRedBright = document.getElementById('presetRedBright');
+        if (presetRedBright) {
+          presetRedBright.addEventListener('click', function () {
+            state.wavelengthNm = 700;
+            state.intensityPct = 100;
+            renderAll();
+          });
+        }
+        var presetVioletDim = document.getElementById('presetVioletDim');
+        if (presetVioletDim) {
+          presetVioletDim.addEventListener('click', function () {
+            state.wavelengthNm = 400;
+            state.intensityPct = 10;
+            renderAll();
+          });
+        }
+
+        // 第4步快速對比
+        var microRedBtn = document.getElementById('microRedBtn');
+        if (microRedBtn) {
+          microRedBtn.addEventListener('click', function () {
+            state.wavelengthNm = 700;
+            renderAll();
+          });
+        }
+        var microVioletBtn = document.getElementById('microVioletBtn');
+        if (microVioletBtn) {
+          microVioletBtn.addEventListener('click', function () {
+            state.wavelengthNm = 400;
+            renderAll();
+          });
+        }
+
+        // 金屬切換
+        var metalBtns = stepBody.querySelectorAll('[data-metal]');
+        metalBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.metalId = btn.getAttribute('data-metal');
+            renderAll();
+          });
+        });
+
+        // 反向電壓
+        var vSlider = document.getElementById('vSlider');
+        if (vSlider) {
+          vSlider.addEventListener('input', function () {
+            state.retardingVoltageV = Number(vSlider.value);
+            renderReadouts();
+          });
+          vSlider.addEventListener('change', renderAll);
+        }
+        var vDownBtn = document.getElementById('vDownBtn');
+        if (vDownBtn) {
+          vDownBtn.addEventListener('click', function () {
+            state.retardingVoltageV = Math.max(0, Math.round((state.retardingVoltageV - 0.01) * 100) / 100);
+            renderAll();
+          });
+        }
+        var vUpBtn = document.getElementById('vUpBtn');
+        if (vUpBtn) {
+          vUpBtn.addEventListener('click', function () {
+            state.retardingVoltageV = Math.min(6, Math.round((state.retardingVoltageV + 0.01) * 100) / 100);
+            renderAll();
+          });
+        }
+
+        // 第7步公式逐步揭露
+        var formulaNextBtn = document.getElementById('formulaNextBtn');
+        if (formulaNextBtn) {
+          formulaNextBtn.addEventListener('click', function () {
+            if (state.formulaRevealCount < 4) {
+              state.formulaRevealCount += 1;
+              state.formulaFocusIdx = state.formulaRevealCount - 1;
+              renderAll();
+            }
+          });
+        }
+        var termBtns = stepBody.querySelectorAll('[data-term]');
+        termBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = Number(btn.getAttribute('data-term'));
+            if (idx + 1 > state.formulaRevealCount) {
+              state.formulaRevealCount = idx + 1;
+            }
+            state.formulaFocusIdx = idx;
+            renderAll();
+          });
+        });
+
+        // 第8步密立坎圖按鈕
+        var recordPointBtn = document.getElementById('recordPointBtn');
+        if (recordPointBtn) {
+          recordPointBtn.addEventListener('click', function () {
+            var phys = getPhys();
+            if (!phys.canEmit) {
+              state.millikanMsg = '目前波長無法打出電子，請先調短波長再量測 V_s。';
+              renderAll();
+              return;
+            }
+            if (phys.currentUa > 1.5) {
+              state.millikanMsg = '電流尚未歸零（' + phys.currentUa.toFixed(1) + ' μA），請調高反向電壓。';
+              renderAll();
+              return;
+            }
+            var dup = state.millikanPoints.some(function (pt) {
+              return Math.abs(pt.wavelengthNm - phys.wavelengthNm) < 1;
+            });
+            if (dup) {
+              state.millikanMsg = '這個波長（' + Math.round(phys.wavelengthNm) + ' nm）已記錄過，請換下一個波長。';
+              renderAll();
+              return;
+            }
+            state.millikanMsg = '已記錄 ' + Math.round(phys.wavelengthNm) + ' nm（V_s = ' + phys.retardingVoltageV.toFixed(2) + ' V）。';
+            state.millikanPoints.push({
+              wavelengthNm: phys.wavelengthNm,
+              frequencyHz: phys.frequencyHz,
+              stoppingVoltageV: phys.retardingVoltageV
+            });
+            if (state.millikanPoints.length >= 4 && state.millikanFit) {
+              state.millikanFit = P.fitMillikanData(state.millikanPoints);
+            }
+            renderAll();
+          });
+        }
+
+        var plotMillikanBtn = document.getElementById('plotMillikanBtn');
+        if (plotMillikanBtn) {
+          plotMillikanBtn.addEventListener('click', function () {
+            if (state.millikanPoints.length >= 4) {
+              state.millikanFit = P.fitMillikanData(state.millikanPoints);
+              state.viewMode = state.viewMode === 'millikan' ? 'tube' : 'millikan';
+              renderAll();
+            }
+          });
+        }
+
+        var resetMillikanBtn = document.getElementById('resetMillikanBtn');
+        if (resetMillikanBtn) {
+          resetMillikanBtn.addEventListener('click', function () {
+            state.millikanPoints = [];
+            state.millikanFit = null;
+            state.viewMode = 'tube';
+            renderAll();
+          });
+        }
+
+        // 第9步迷思分頁
+        var mythBtns = stepBody.querySelectorAll('[data-myth]');
+        mythBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.mythIndex = Number(btn.getAttribute('data-myth'));
+            state.visitedMyths[state.mythIndex] = true;
+            renderAll();
+          });
+        });
+
+        // 第10步遷移題
+        var ansBtns = stepBody.querySelectorAll('[data-ans]');
+        ansBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.transferChoice = btn.getAttribute('data-ans');
+            renderAll();
+          });
+        });
+      }
+
+      function renderNavButtons() {
+        prevBtn.disabled = state.step <= 1;
+        if (state.step >= STEPS.length) {
+          nextBtn.textContent = '已完成全部步驟';
+          nextBtn.disabled = true;
+        } else if (state.step === 1 && !state.prediction) {
+          nextBtn.textContent = '請先選擇預測';
+          nextBtn.disabled = true;
+        } else if (state.step === 7 && state.formulaRevealCount < 4) {
+          nextBtn.textContent = '請先看完全部 4 個符號';
+          nextBtn.disabled = true;
+        } else {
+          nextBtn.textContent = '下一步';
+          nextBtn.disabled = false;
+        }
+      }
+
+      function renderAll() {
+        renderStepStrip();
+        renderReadouts();
+        renderStepBody();
+        renderNavButtons();
+      }
+
+      // 慢動作按鈕事件
+      document.querySelectorAll('.speed-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          state.speedMultiplier = Number(btn.getAttribute('data-speed'));
+          document.querySelectorAll('.speed-btn').forEach(function (b) {
+            b.classList.toggle('active', b === btn);
+          });
+        });
+      });
+
+      prevBtn.addEventListener('click', function () {
+        goToStep(state.step - 1);
+      });
+
+      nextBtn.addEventListener('click', unlockAndNext);
+
+      // Canvas 繪圖與物理動畫迴圈
+      // 幾何與構圖基準（場景佔畫布高度 70% 以上，垂直置中）
+      function getSceneLayout(w, h) {
+        var tubeTop = h * 0.14;
+        var tubeBot = h * 0.62;
+        var tubeMidY = (tubeTop + tubeBot) / 2;
+        var tubeLeft = w * 0.21;
+        var tubeRight = w * 0.87;
+        var cathodeX = w * 0.27;
+        var anodeX = w * 0.81;
+        var lampExitX = w * 0.135;
+        var circuitY = h * 0.78;
+        return {
+          tubeTop: tubeTop,
+          tubeBot: tubeBot,
+          tubeMidY: tubeMidY,
+          tubeLeft: tubeLeft,
+          tubeRight: tubeRight,
+          cathodeX: cathodeX,
+          anodeX: anodeX,
+          lampExitX: lampExitX,
+          circuitY: circuitY
+        };
+      }
+
+      // 金屬材質配色（依所選金屬微調）
+      function getMetalPalette(metalId) {
+        var map = {
+          Cs: { side: '#6B7280', frontTop: '#E5E7EB', frontBot: '#9CA3AF', edge: '#4B5563' },
+          Na: { side: '#78716C', frontTop: '#E7E5E4', frontBot: '#A8A29E', edge: '#57534E' },
+          K:  { side: '#71717A', frontTop: '#F4F4F5', frontBot: '#A1A1AA', edge: '#52525B' },
+          Zn: { side: '#64748B', frontTop: '#E2E8F0', frontBot: '#94A3B8', edge: '#475569' },
+          Cu: { side: '#92400E', frontTop: '#FDBA74', frontBot: '#C26D3D', edge: '#78350F' },
+          Pt: { side: '#6B7280', frontTop: '#F3F4F6', frontBot: '#B4BCC8', edge: '#4B5563' }
+        };
+        return map[metalId] || map.Cs;
+      }
+
+      function spawnPhoton(phys, w, h) {
+        var L = getSceneLayout(w, h);
+        var spread = (L.tubeBot - L.tubeTop - 44) * 0.42;
+        var offset = (Math.random() * 2 - 1);
+        var startY = L.tubeMidY + offset * 14;
+        var targetY = L.tubeMidY + offset * spread;
+        var startX = L.lampExitX;
+
+        var dx = L.cathodeX - 8 - startX;
+        var dy = targetY - startY;
+        var dist = Math.hypot(dx, dy);
+        var speed = 290;
+
+        // 波長越短光子半徑略大（編碼能量）
+        var normEnergy = (800 - phys.wavelengthNm) / 700; // 0..1
+        var radius = 3.8 + normEnergy * 3.2;
+
+        photons.push({
+          x: startX,
+          y: startY,
+          vx: (dx / dist) * speed,
+          vy: (dy / dist) * speed,
+          radius: radius,
+          bounced: false,
+          alpha: 1,
+          bounceLife: 0
+        });
+      }
+
+      function spawnElectron(phys, hitY) {
+        var ke = Math.random() * phys.kMaxEv;
+        if (Math.random() < 0.45) {
+          ke = phys.kMaxEv * (0.85 + 0.15 * Math.random());
+        }
+        var speedScale = 140 + Math.sqrt(ke) * 145;
+        electrons.push({
+          px: null,
+          y: hitY,
+          keEv: ke,
+          vx: speedScale,
+          vy: (Math.random() - 0.5) * 46, // 明顯弧線便於觀察折返
+          alive: true
+        });
+      }
+
+      function updateSimulation(dt, w, h) {
+        if (state.viewMode === 'millikan') return;
+
+        var phys = getPhys();
+        var L = getSceneLayout(w, h);
+        var cathodeHitX = L.cathodeX - 8;
+        var cathodeEmitX = L.cathodeX + 10;
+        var anodeHitX = L.anodeX - 6;
+        var gapPx = Math.max(100, anodeHitX - cathodeEmitX);
+
+        if (state.isEmittingLight && phys.intensityPct > 0) {
+          var rate = 2.0 + (phys.intensityPct / 100) * 15;
+          photonSpawnAccum += dt * rate;
+          while (photonSpawnAccum >= 1) {
+            photonSpawnAccum -= 1;
+            if (photons.length < 65) {
+              spawnPhoton(phys, w, h);
+            }
+          }
+        }
+
+        // 更新光子
+        for (var i = photons.length - 1; i >= 0; i--) {
+          var p = photons[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+
+          if (!p.bounced && p.x >= cathodeHitX) {
+            // 撞擊陰極瞬間的小漣漪閃光
+            ripples.push({ x: cathodeHitX, y: p.y, r: 4, maxR: 22, alpha: 0.9 });
+            if (phys.canEmit) {
+              spawnElectron(phys, p.y);
+              photons.splice(i, 1);
+            } else {
+              // 能量不足：彈開並淡出
+              p.bounced = true;
+              p.vx = -Math.abs(p.vx) * 0.55;
+              p.vy = (p.y < L.tubeMidY ? -1 : 1) * (40 + Math.random() * 55);
+              p.bounceLife = 0.42;
+            }
+          } else if (p.bounced) {
+            p.bounceLife -= dt;
+            p.alpha = Math.max(0, p.bounceLife / 0.42);
+            if (p.bounceLife <= 0 || p.x < L.lampExitX - 10) {
+              photons.splice(i, 1);
+            }
+          }
+        }
+
+        // 更新電子（含反向電場減速、停下、折返弧線）
+        for (var j = electrons.length - 1; j >= 0; j--) {
+          var el = electrons[j];
+          if (el.px === null) el.px = cathodeEmitX;
+
+          var v0 = 140 + Math.sqrt(Math.max(0.05, el.keEv)) * 145;
+          if (phys.retardingVoltageV > 0 && el.keEv > 0) {
+            var a = (v0 * v0 * (phys.retardingVoltageV / el.keEv)) / (2 * (gapPx - 6));
+            el.vx -= a * dt;
+          }
+
+          el.px += el.vx * dt;
+          el.y += el.vy * dt;
+
+          // 上下邊界溫和限制在管內
+          if (el.y < L.tubeTop + 18) { el.y = L.tubeTop + 18; el.vy = Math.abs(el.vy); }
+          if (el.y > L.tubeBot - 18) { el.y = L.tubeBot - 18; el.vy = -Math.abs(el.vy); }
+
+          if (el.px >= anodeHitX) {
+            // 抵達陽極：板面小亮點回饋＋指針輕微抖動
+            anodeHits.push({ x: anodeHitX, y: el.y, alpha: 1.0 });
+            ammeterJitter = Math.min(1, ammeterJitter + 0.35);
+            electrons.splice(j, 1);
+          } else if (el.px <= cathodeEmitX - 2 && el.vx < 0) {
+            electrons.splice(j, 1);
+          }
+        }
+
+        // 更新漣漪與陽極亮點
+        for (var r = ripples.length - 1; r >= 0; r--) {
+          var rp = ripples[r];
+          rp.r += 55 * dt;
+          rp.alpha -= 2.2 * dt;
+          if (rp.alpha <= 0) ripples.splice(r, 1);
+        }
+        for (var ah = anodeHits.length - 1; ah >= 0; ah--) {
+          anodeHits[ah].alpha -= 2.8 * dt;
+          if (anodeHits[ah].alpha <= 0) anodeHits.splice(ah, 1);
+        }
+        ammeterJitter = Math.max(0, ammeterJitter - 3.5 * dt);
+      }
+
+      function drawArrow(x1, y1, x2, y2, color, lineWidth) {
+        var head = 7;
+        var angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = lineWidth || 1.75;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawTubeScene(w, h) {
+        var phys = getPhys();
+        var spec = P.wavelengthToSpectrumRgb(phys.wavelengthNm);
+        var specRgb = spec.r + ',' + spec.g + ',' + spec.b;
+        var L = getSceneLayout(w, h);
+        var fontFam = getComputedStyle(document.body).fontFamily;
+        var monoFam = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+        // 1. 場景底層暖灰上下漸層
+        var bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#F7F4EE');
+        bgGrad.addColorStop(1, '#FFFFFF');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 2. 橫放真空玻璃管本體（管內底色較管外略深一階）
+        ctx.save();
+        var tubeGrad = ctx.createLinearGradient(0, L.tubeTop, 0, L.tubeBot);
+        tubeGrad.addColorStop(0, '#E9E4DA');
+        tubeGrad.addColorStop(0.5, '#F3F0E8');
+        tubeGrad.addColorStop(1, '#E6E0D5');
+        ctx.fillStyle = tubeGrad;
+        ctx.strokeStyle = '#B8B1A3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(L.tubeLeft, L.tubeTop, L.tubeRight - L.tubeLeft, L.tubeBot - L.tubeTop, 26);
+        ctx.fill();
+        ctx.stroke();
+
+        // 左上緣極細玻璃高光線
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(L.tubeLeft + 26, L.tubeTop + 5);
+        ctx.lineTo(L.tubeRight - 26, L.tubeTop + 5);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. 光源座（管外左方，與陰極中心同高）
+        ctx.save();
+        var lampW = w * 0.085;
+        var lampH = 54;
+        var lampX = L.lampExitX - lampW;
+        var lampY = L.tubeMidY - lampH / 2;
+
+        // 梯形底座與外殼
+        var lampGrad = ctx.createLinearGradient(lampX, lampY, lampX, lampY + lampH);
+        lampGrad.addColorStop(0, '#4B5563');
+        lampGrad.addColorStop(1, '#1F2937');
+        ctx.fillStyle = lampGrad;
+        ctx.beginPath();
+        ctx.moveTo(lampX, lampY + 8);
+        ctx.lineTo(L.lampExitX - 6, lampY);
+        ctx.lineTo(L.lampExitX - 6, lampY + lampH);
+        ctx.lineTo(lampX, lampY + lampH - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // 出光透鏡口
+        ctx.fillStyle = state.isEmittingLight ? 'rgb(' + specRgb + ')' : '#9CA3AF';
+        ctx.beginPath();
+        ctx.ellipse(L.lampExitX - 4, L.tubeMidY, 5, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 光源標籤（元件外側上方，留 8px+ 間距）
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 13px ' + fontFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('光源', lampX + lampW * 0.48, lampY - 12);
+        ctx.restore();
+
+        // 4. 錐形光束（從出光口到陰極板）
+        if (state.isEmittingLight && phys.intensityPct > 0) {
+          ctx.save();
+          var beamSpread = (L.tubeBot - L.tubeTop - 42) * 0.45;
+          var x0 = L.lampExitX;
+          var x1 = L.cathodeX - 8;
+          var y0Top = L.tubeMidY - 15;
+          var y0Bot = L.tubeMidY + 15;
+          var y1Top = L.tubeMidY - beamSpread;
+          var y1Bot = L.tubeMidY + beamSpread;
+
+          if (spec.isUv) {
+            // 紫外段：淡紫色虛線邊框＋「紫外線（看不見）」標記
+            ctx.strokeStyle = 'rgba(139, 92, 246, ' + (0.35 + 0.55 * phys.intensityPct / 100).toFixed(2) + ')';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x0, y0Top);
+            ctx.lineTo(x1, y1Top);
+            ctx.moveTo(x0, y0Bot);
+            ctx.lineTo(x1, y1Bot);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#6D28D9';
+            ctx.font = '600 11px ' + fontFam;
+            ctx.textAlign = 'center';
+            ctx.fillText('紫外線（看不見）', (x0 + x1) / 2 - 4, y1Top - 10);
+          } else {
+            var beamAlpha = 0.12 + 0.42 * (phys.intensityPct / 100);
+            var beamGrad = ctx.createLinearGradient(x0, 0, x1, 0);
+            beamGrad.addColorStop(0, 'rgba(' + specRgb + ', ' + beamAlpha.toFixed(2) + ')');
+            beamGrad.addColorStop(1, 'rgba(' + specRgb + ', ' + (beamAlpha * 0.38).toFixed(2) + ')');
+            ctx.fillStyle = beamGrad;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0Top);
+            ctx.lineTo(x1, y1Top);
+            ctx.lineTo(x1, y1Bot);
+            ctx.lineTo(x0, y0Bot);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // 5. 陰極板（有厚度：左側面深灰、正面漸層、微刷紋、隨金屬微調）
+        var plateTop = L.tubeTop + 22;
+        var plateH = L.tubeBot - L.tubeTop - 44;
+        var pal = getMetalPalette(phys.metal.id);
+
+        ctx.save();
+        // 左側面（厚度感）
+        ctx.fillStyle = pal.side;
+        ctx.beginPath();
+        ctx.roundRect(L.cathodeX - 10, plateTop, 7, plateH, [4, 0, 0, 4]);
+        ctx.fill();
+
+        // 正面金屬漸層
+        var cGrad = ctx.createLinearGradient(L.cathodeX - 3, plateTop, L.cathodeX + 10, plateTop + plateH);
+        cGrad.addColorStop(0, pal.frontTop);
+        cGrad.addColorStop(1, pal.frontBot);
+        ctx.fillStyle = cGrad;
+        ctx.strokeStyle = pal.edge;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(L.cathodeX - 4, plateTop, 14, plateH, [2, 4, 4, 2]);
+        ctx.fill();
+        ctx.stroke();
+
+        // 極淡垂直刷紋
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1;
+        for (var bx = L.cathodeX - 1; bx <= L.cathodeX + 7; bx += 3) {
+          ctx.beginPath();
+          ctx.moveTo(bx, plateTop + 6);
+          ctx.lineTo(bx, plateTop + plateH - 6);
+          ctx.stroke();
+        }
+
+        // 陰極標籤（置於玻璃管外上方，留 10px 間距）
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 13px ' + fontFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('發射極（' + phys.metal.symbol + ' 陰極）', L.cathodeX, L.tubeTop - 12);
+        ctx.restore();
+
+        // 6. 陽極板（同語彙窄板，與陰極同高對齊）
+        ctx.save();
+        var aGrad = ctx.createLinearGradient(L.anodeX - 6, plateTop, L.anodeX + 6, plateTop + plateH);
+        aGrad.addColorStop(0, '#E5E7EB');
+        aGrad.addColorStop(1, '#6B7280');
+        ctx.fillStyle = aGrad;
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(L.anodeX - 6, plateTop, 12, plateH, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 13px ' + fontFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('收集極（陽極）', L.anodeX, L.tubeTop - 12);
+        ctx.restore();
+
+        // 7. 管內上方方向提示箭頭（留出空白，不壓粒子或元件）
+        var midX = (L.cathodeX + L.anodeX) / 2;
+        if (phys.retardingVoltageV > 0) {
+          ctx.save();
+          ctx.fillStyle = '#D93829';
+          ctx.font = '600 12px ' + fontFam;
+          ctx.textAlign = 'center';
+          ctx.fillText('反向電場推力方向', midX, L.tubeTop + 22);
+          drawArrow(midX + 48, L.tubeTop + 31, midX - 48, L.tubeTop + 31, '#D93829', 1.8);
+          ctx.restore();
+        } else if (state.isEmittingLight && phys.canEmit) {
+          ctx.save();
+          ctx.fillStyle = '#1D4ED8';
+          ctx.font = '600 12px ' + fontFam;
+          ctx.textAlign = 'center';
+          ctx.fillText('電子飛向收集極', midX, L.tubeTop + 22);
+          drawArrow(midX - 48, L.tubeTop + 31, midX + 48, L.tubeTop + 31, '#1D4ED8', 1.8);
+          ctx.restore();
+        }
+
+        // 8. 繪製撞擊陰極的漣漪閃光
+        ripples.forEach(function (rp) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(' + specRgb + ', ' + rp.alpha.toFixed(2) + ')';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, rp.r, -Math.PI * 0.65, Math.PI * 0.65);
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // 9. 繪製陽極板面吸收小亮點
+        anodeHits.forEach(function (ah) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(29, 78, 216, ' + ah.alpha.toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.arc(ah.x + 2, ah.y, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        // 10. 繪製光子（發光小球＋外圈同色光暈）
+        photons.forEach(function (p) {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          // 外圈光暈
+          ctx.fillStyle = 'rgba(' + specRgb + ', 0.28)';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 1.9, 0, Math.PI * 2);
+          ctx.fill();
+          // 核心球
+          ctx.fillStyle = 'rgb(' + specRgb + ')';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        // 11. 繪製電子（深藍小球帶白色「−」負號）
+        electrons.forEach(function (el) {
+          ctx.save();
+          ctx.fillStyle = '#1D4ED8';
+          ctx.beginPath();
+          ctx.arc(el.px, el.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(el.px - 3, el.y);
+          ctx.lineTo(el.px + 3, el.y);
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // 12. 管下方正規電路圖語彙（直角導線＋圓形電流計錶頭＋電池符號）
+        var ammeterX = w * 0.42;
+        var batteryX = w * 0.66;
+        var wireCathX = L.cathodeX + 2;
+        var wireAnodX = L.anodeX;
+        var meterR = 26;
+
+        ctx.save();
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 2.2;
+        // 左側導線至電流計
+        ctx.beginPath();
+        ctx.moveTo(wireCathX, L.tubeBot - 22);
+        ctx.lineTo(wireCathX, L.circuitY);
+        ctx.lineTo(ammeterX - meterR, L.circuitY);
+        ctx.stroke();
+
+        // 電流計至電池
+        ctx.beginPath();
+        ctx.moveTo(ammeterX + meterR, L.circuitY);
+        ctx.lineTo(batteryX - 14, L.circuitY);
+        ctx.stroke();
+
+        // 電池至陽極
+        ctx.beginPath();
+        ctx.moveTo(batteryX + 14, L.circuitY);
+        ctx.lineTo(wireAnodX, L.circuitY);
+        ctx.lineTo(wireAnodX, L.tubeBot - 22);
+        ctx.stroke();
+
+        // 圓形電流計錶頭（外圈、刻度弧、指針、下方獨立標籤）
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = phys.currentUa > 0 ? '#1D4ED8' : '#6B7280';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(ammeterX, L.circuitY, meterR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 刻度弧（-135° 到 -45° 上半圓弧）
+        ctx.strokeStyle = '#9CA3AF';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(ammeterX, L.circuitY + 4, meterR - 7, -Math.PI * 0.85, -Math.PI * 0.15);
+        ctx.stroke();
+
+        // 動態指針（隨電流大小偏轉＋抵達同步抖動）
+        var ratio = Math.min(1, phys.currentUa / 120);
+        var jitterRad = phys.currentUa > 0 ? (Math.sin(performance.now() * 0.04) * 0.04 * ammeterJitter) : 0;
+        var needleAngle = -Math.PI * 0.85 + ratio * (Math.PI * 0.70) + jitterRad;
+        ctx.strokeStyle = '#D93829';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ammeterX, L.circuitY + 5);
+        ctx.lineTo(ammeterX + Math.cos(needleAngle) * (meterR - 8), (L.circuitY + 5) + Math.sin(needleAngle) * (meterR - 8));
+        ctx.stroke();
+        ctx.fillStyle = '#1D1D1F';
+        ctx.beginPath();
+        ctx.arc(ammeterX, L.circuitY + 5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 錶頭下方獨立數字標籤（完全不壓錶頭）
+        ctx.fillStyle = phys.currentUa > 0 ? '#1D4ED8' : '#1D1D1F';
+        ctx.font = '700 13px ' + monoFam;
+        ctx.textAlign = 'center';
+        ctx.fillText('電流計 ' + phys.currentUa.toFixed(1) + ' μA', ammeterX, L.circuitY + meterR + 18);
+
+        // 電池符號（長短線對，正負極性：反向電壓時陰極側接長線正極、陽極側接短粗線負極）
+        ctx.strokeStyle = phys.retardingVoltageV > 0 ? '#D93829' : '#374151';
+        ctx.lineWidth = 2;
+        // 長線（正極 +，靠左/陰極側）
+        ctx.beginPath();
+        ctx.moveTo(batteryX - 6, L.circuitY - 16);
+        ctx.lineTo(batteryX - 6, L.circuitY + 16);
+        ctx.stroke();
+        // 短粗線（負極 -，靠右/陽極側）
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(batteryX + 6, L.circuitY - 9);
+        ctx.lineTo(batteryX + 6, L.circuitY + 9);
+        ctx.stroke();
+
+        // + / - 極性與電壓獨立標籤（留 8px+ 間距）
+        ctx.fillStyle = phys.retardingVoltageV > 0 ? '#D93829' : '#5C5C62';
+        ctx.font = '700 12px ' + monoFam;
+        ctx.fillText('+', batteryX - 16, L.circuitY - 12);
+        ctx.fillText('−', batteryX + 16, L.circuitY - 12);
+        ctx.font = '700 13px ' + monoFam;
+        ctx.fillText('反向電源 ' + phys.retardingVoltageV.toFixed(2) + ' V', batteryX, L.circuitY + meterR + 18);
+        ctx.restore();
+      }
+
+      function drawMillikanGraph(w, h) {
+        ctx.clearRect(0, 0, w, h);
+        var padL = 70, padR = 30, padT = 36, padB = 54;
+        var plotW = w - padL - padR;
+        var plotH = h - padT - padB;
+
+        // 座標軸
+        ctx.save();
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(padL, padT);
+        ctx.lineTo(padL, padT + plotH);
+        ctx.lineTo(padL + plotW, padT + plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#1D1D1F';
+        ctx.font = '700 14px ' + getComputedStyle(document.body).fontFamily;
+        ctx.fillText('密立坎圖：遏止電壓 V_s 對 頻率 f', padL, 22);
+        ctx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
+        ctx.textAlign = 'center';
+        ctx.fillText('頻率 f (×10^14 Hz)', padL + plotW / 2, h - 14);
+        ctx.save();
+        ctx.translate(20, padT + plotH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('遏止電壓 V_s (V)', 0, 0);
+        ctx.restore();
+
+        var fMin = 4, fMax = 16; // ×10^14 Hz
+        var vMin = 0, vMax = 6;
+
+        function mapX(f14) { return padL + ((f14 - fMin) / (fMax - fMin)) * plotW; }
+        function mapY(v) { return padT + plotH - ((v - vMin) / (vMax - vMin)) * plotH; }
+
+        // 刻度
+        ctx.fillStyle = '#5C5C62';
+        ctx.font = '12px ' + getComputedStyle(document.body).fontFamily;
+        for (var fTick = 4; fTick <= 16; fTick += 2) {
+          var x = mapX(fTick);
+          ctx.fillText(String(fTick), x, padT + plotH + 18);
+        }
+        ctx.textAlign = 'right';
+        for (var vTick = 0; vTick <= 6; vTick += 1) {
+          var y = mapY(vTick);
+          ctx.fillText(vTick.toFixed(0), padL - 10, y + 4);
+        }
+
+        // 擬合直線
+        if (state.millikanFit) {
+          var slope14 = state.millikanFit.slope * 1e14;
+          var intercept = state.millikanFit.intercept;
+          var x1 = fMin, y1 = slope14 * x1 + intercept;
+          var x2 = fMax, y2 = slope14 * x2 + intercept;
+          ctx.strokeStyle = '#D93829';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(mapX(x1), mapY(y1));
+          ctx.lineTo(mapX(x2), mapY(y2));
+          ctx.stroke();
+        }
+
+        // 資料點
+        state.millikanPoints.forEach(function (pt) {
+          var px = mapX(pt.frequencyHz / 1e14);
+          var py = mapY(pt.stoppingVoltageV);
+          ctx.fillStyle = '#1D4ED8';
+          ctx.beginPath();
+          ctx.arc(px, py, 6, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.restore();
+      }
+
+      var lastTime = performance.now();
+      function loop(now) {
+        var rawDt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        var dt = rawDt * state.speedMultiplier;
+        var rect = canvasWrap.getBoundingClientRect();
+        if (state.viewMode === 'millikan') {
+          drawMillikanGraph(rect.width, rect.height);
+        } else {
+          updateSimulation(dt, rect.width, rect.height);
+          drawTubeScene(rect.width, rect.height);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      // 初始化
+      resizeCanvas();
+      renderAll();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
